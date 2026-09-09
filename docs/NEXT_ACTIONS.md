@@ -1,13 +1,16 @@
-# PROJECT ABYSS — Next Actions
-Updated: 2026-09-09
+# PROJECT ABYSS Next Actions
 
-1. Human Gate reviews GATE1_HUMAN_GATE_PACKET.md.
-2. If approved, mark Gate 1 PASS and unlock production gameplay source.
-3. Create isolated Gate 2 task branch/worktree.
-4. Establish approved src/shared, src/server, src/client, tests and tools layout.
-5. Implement the smallest server-authoritative movement/combat skeleton.
-6. Add abuse and cadence/ammo/dash validation tests before content expansion.
-7. Run Roblox Studio multiplayer integration tests.
-8. Perform real-phone control and feel Human Gate before freezing physical constants.
+Updated: 2026-09-10
 
-Do not create Gate 2 gameplay source before step 2.
+1. Complete final review of Orchestrator P0 safeguards.
+2. Record immutable Orchestrator commit and test evidence.
+3. Confirm Slack PLAN READY and remediation checkpoint delivery.
+4. Create an isolated Gate 2 repository bootstrap branch.
+5. Add Rojo mapping, source tree, tests, tools and CI configuration.
+6. Add repository AGENTS.md and initial skill contracts.
+7. Verify protected-main and required-check strategy.
+8. Implement the smallest server-authoritative AR vertical slice.
+9. Run automated, Studio multiplayer and network-simulation layers.
+10. Perform real-phone control and feel validation before freezing physical constants.
+
+Do not create gameplay source before steps 1 through 7 are complete.
