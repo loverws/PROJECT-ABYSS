@@ -1,0 +1,30 @@
+name: Bootstrap CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rokit
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/rojo-rbx/rokit/releases/download/v1.2.0/rokit-1.2.0-windows-x86_64.zip'
+          $zip = Join-Path $env:RUNNER_TEMP 'rokit.zip'
+          Invoke-WebRequest -Headers @{'User-Agent'='PROJECT-ABYSS-CI'} -Uri $url -OutFile $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'f9ba1704014ff67d51e8005f605955c7c26d2429a5312a9419dc477fc310e96d') {
+            throw 'Rokit SHA256 mismatch'
+          }
+          $dir = Join-Path $env:RUNNER_TEMP 'rokit'
+          Expand-Archive -Path $zip -DestinationPath $dir
+          & (Join-Path $dir 'rokit.exe') trust rojo-rbx/rojo JohnnyMorganz/StyLua Kampfkarren/selene
+          & (Join-Path $dir 'rokit.exe') install
+      - name: Verify bootstrap
+        shell: pwsh
+        run: py tools/verify_bootstrap.py
