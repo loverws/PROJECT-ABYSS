@@ -24,6 +24,7 @@ jobs:
           if ($hash -ne 'f9ba1704014ff67d51e8005f605955c7c26d2429a5312a9419dc477fc310e96d') { throw 'Rokit SHA256 mismatch' }
           $dir = Join-Path $env:RUNNER_TEMP 'rokit'
           Expand-Archive -Path $zip -DestinationPath $dir
+          & (Join-Path $dir 'rokit.exe') self-install
           & (Join-Path $dir 'rokit.exe') trust rojo-rbx/rojo JohnnyMorganz/StyLua Kampfkarren/selene
           & (Join-Path $dir 'rokit.exe') install
       - name: Verify bootstrap
