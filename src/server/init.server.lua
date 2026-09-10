@@ -1,5 +1,5 @@
 local Players = game:GetService("Players")
-local WeaponService = require(script.Parent.WeaponService)
+local WeaponService = require(script.WeaponService)
 
 WeaponService:Init()
 

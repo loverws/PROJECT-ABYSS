@@ -1,3 +1,3 @@
-local ClientWeaponSystem = require(script.Parent.ClientWeaponSystem)
+local ClientWeaponSystem = require(script.ClientWeaponSystem)
 
 ClientWeaponSystem:Init()

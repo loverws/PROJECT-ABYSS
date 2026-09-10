@@ -24,6 +24,11 @@ while #Players:GetPlayers() < 2 do
     task.wait()
 end
 
+-- Wait until StudioGateReady is true
+while not LocalPlayer:GetAttribute("StudioGateReady") do
+    task.wait()
+end
+
 local function send(sequence, origin, direction, label)
     print("CASE_START", sequence, label)
     RemoteEvent:FireServer({
