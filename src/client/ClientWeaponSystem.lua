@@ -1,4 +1,6 @@
+-- Client-side weapon system
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local RemoteEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ClientWeaponSystem = { sequence = 0 }
@@ -25,10 +27,21 @@ function ClientWeaponSystem:HandleServerResponse(payload)
     end
     if payload.accepted then
         -- Presentation-only acknowledgement hook.
+        if RunService:IsStudio() then
+            print(
+                "presentationOnly:",
+                payload.presentationOnly,
+                "shooter accepted:",
+                payload.accepted
+            )
+        end
         return
     end
 
     -- Prediction reconciliation hook; no gameplay authority lives here.
+    if RunService:IsStudio() then
+        print("shooter rejected:", payload.accepted, "reason:", payload.reason)
+    end
 end
 
 return ClientWeaponSystem

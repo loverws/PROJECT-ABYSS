@@ -6,6 +6,8 @@ local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local WeaponAuthority = require(Shared.WeaponAuthority)
 
+local RunService = game:GetService("RunService")
+
 local RemoteEvent = Instance.new("RemoteEvent")
 RemoteEvent.Name = "FireWeapon"
 RemoteEvent.Parent = ReplicatedStorage
@@ -72,8 +74,17 @@ function WeaponService:HandleFireRequest(player, payload)
 
     local result = WeaponAuthority.CanFire(playerData, convertedPayload, now, authoritativeOrigin)
 
+    if RunService:IsStudio() then
+        print(player.Name, payload.sequence, result.accepted, result.reason)
+    end
+
     if not result.accepted then
         -- Do NOT consume sequence on rejection
+        RemoteEvent:FireClient(player, {
+            accepted = false,
+            sequence = payload.sequence,
+            reason = result.reason,
+        })
         return
     end
 
@@ -88,6 +99,18 @@ function WeaponService:HandleFireRequest(player, payload)
         sequence = payload.sequence,
         reason = result.reason,
     })
+
+    -- Broadcast to other players (presentation only)
+    for otherPlayer in pairs(self.players) do
+        if otherPlayer ~= player then
+            RemoteEvent:FireClient(otherPlayer, {
+                accepted = true,
+                sequence = payload.sequence,
+                reason = result.reason,
+                presentationOnly = true,
+            })
+        end
+    end
 end
 
 function WeaponService:SetupPlayer(player)
@@ -97,6 +120,12 @@ function WeaponService:SetupPlayer(player)
         lastSequence = 0,
         lastFire = 0,
     }
+    if not self.firstPlayer then
+        self.firstPlayer = player
+        if RunService:IsStudio() then
+            player:SetAttribute("StudioGateDriver", true)
+        end
+    end
 end
 
 function WeaponService:KillPlayer(player)
