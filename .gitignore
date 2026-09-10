@@ -16,3 +16,9 @@ logs/
 results/
 __pycache__/
 *.pyc
+
+# Generated build output
+build/
+sourcemap.json
+*.rbxl
+*.rbxlx
