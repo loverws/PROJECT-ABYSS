@@ -1,0 +1,114 @@
+{
+  "name": "PROJECT_ABYSS_PHONE_GATE",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "../../src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": {
+        "$path": "../../src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Client": {
+          "$path": "../../src/client"
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "Floor": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [
+            100,
+            1,
+            100
+          ],
+          "Position": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "SpawnLocation": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [
+            6,
+            1,
+            6
+          ],
+          "Position": [
+            0,
+            1,
+            15
+          ]
+        }
+      },
+      "Target1": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [
+            4,
+            6,
+            1
+          ],
+          "Position": [
+            -10,
+            3,
+            -20
+          ]
+        }
+      },
+      "Target2": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [
+            4,
+            6,
+            1
+          ],
+          "Position": [
+            0,
+            3,
+            -25
+          ]
+        }
+      },
+      "Target3": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Size": [
+            4,
+            6,
+            1
+          ],
+          "Position": [
+            10,
+            3,
+            -20
+          ]
+        }
+      }
+    }
+  }
+}
