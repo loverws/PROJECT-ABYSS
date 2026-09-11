@@ -53,9 +53,10 @@
           ],
           "Position": [
             0,
-            1,
+            3,
             15
-          ]
+          ],
+          "CanCollide": false
         }
       },
       "Target1": {
@@ -107,6 +108,37 @@
             3,
             -20
           ]
+        }
+      }
+    },
+    "StarterPack": {
+      "$className": "StarterPack",
+      "AssaultRifle": {
+        "$className": "Tool",
+        "$properties": {
+          "RequiresHandle": true,
+          "CanBeDropped": false
+        },
+        "Handle": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": false,
+            "CanCollide": false,
+            "Massless": true,
+            "Size": [
+              2,
+              0.4,
+              0.6
+            ],
+            "Color": [
+              0.1,
+              0.2,
+              0.3
+            ]
+          }
+        },
+        "WeaponTool": {
+          "$path": "../../src/tool/WeaponTool.client.lua"
         }
       }
     }
