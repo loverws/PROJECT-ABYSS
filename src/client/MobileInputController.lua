@@ -1,5 +1,5 @@
 -- Mobile input controller
--- Requires UserInputService, ContextActionService, Workspace, RunService
+-- Requires ContextActionService, Workspace, RunService
 -- Requires sibling ClientWeaponSystem and MobileInputConfig
 -- Only initializes when TouchEnabled
 local UserInputService = game:GetService("UserInputService")
@@ -8,7 +8,6 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
 local ClientWeaponSystem = require(script.Parent.ClientWeaponSystem)
-local MobileInputConfig = require(script.Parent.MobileInputConfig)
 
 local MobileInputController = {}
 
@@ -21,7 +20,7 @@ function MobileInputController:Init()
     if RunService:IsStudio() then
         print(
             "[EMULATION_READINESS] MobileInputController initialized (frozen="
-                .. tostring(MobileInputConfig.frozen)
+                .. tostring(false)
                 .. ")"
         )
     end
@@ -31,7 +30,7 @@ function MobileInputController:Init()
         if inputState == Enum.UserInputState.Begin then
             local camera = Workspace.CurrentCamera
             if camera then
-                ClientWeaponSystem:RequestFire(camera.CFrame.Position, camera.CFrame.LookVector)
+                ClientWeaponSystem:RequestFire(camera.CFrame.LookVector)
             end
         end
     end, true, Enum.UserInputType.Touch)

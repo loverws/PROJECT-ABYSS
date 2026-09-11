@@ -8,10 +8,15 @@ local WeaponAuthority = require(Shared.WeaponAuthority)
 local VisibleFireSystem = require(script.Parent.VisibleFireSystem)
 
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local RemoteEvent = Instance.new("RemoteEvent")
 RemoteEvent.Name = "FireWeapon"
 RemoteEvent.Parent = ReplicatedStorage
+
+local ReloadEvent = Instance.new("RemoteEvent")
+ReloadEvent.Name = "ReloadWeapon"
+ReloadEvent.Parent = ReplicatedStorage
 
 local WeaponService = {}
 
@@ -21,6 +26,10 @@ function WeaponService:Init()
     -- Setup remote event
     RemoteEvent.OnServerEvent:Connect(function(player, payload)
         self:HandleFireRequest(player, payload)
+    end)
+
+    ReloadEvent.OnServerEvent:Connect(function(player)
+        self:HandleReloadRequest(player)
     end)
 end
 
@@ -35,7 +44,7 @@ function WeaponService:HandleFireRequest(player, payload)
         return
     end
 
-    local now = tick()
+    local now = Workspace:GetServerTimeNow()
 
     -- Get authoritative origin from HumanoidRootPart
     local character = player.Character
@@ -73,6 +82,17 @@ function WeaponService:HandleFireRequest(player, payload)
         },
     }
 
+    -- Check if player is reloading
+    if playerData.reloading then
+        RemoteEvent:FireClient(player, {
+            accepted = false,
+            sequence = payload.sequence,
+            reason = "Reloading",
+            ammo = playerData.ammo,
+        })
+        return
+    end
+
     local result = WeaponAuthority.CanFire(playerData, convertedPayload, now, authoritativeOrigin)
 
     if RunService:IsStudio() then
@@ -85,6 +105,7 @@ function WeaponService:HandleFireRequest(player, payload)
             accepted = false,
             sequence = payload.sequence,
             reason = result.reason,
+            ammo = playerData.ammo,
         })
         return
     end
@@ -94,13 +115,24 @@ function WeaponService:HandleFireRequest(player, payload)
     playerData.lastFire = result.newState.lastFire
     playerData.lastSequence = result.newState.lastSequence
 
-    VisibleFireSystem.CreateTracer(rootPart.Position, payload.direction, character)
+    -- Create tracer on server
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = { character }
+
+    local unitDirection = payload.direction.Unit
+    local raycastResult = Workspace:Raycast(rootPart.Position, unitDirection * 300, raycastParams)
+    local hitPosition = if raycastResult
+        then raycastResult.Position
+        else rootPart.Position + unitDirection * 300
 
     -- Send back to client for prediction reconciliation
     RemoteEvent:FireClient(player, {
         accepted = true,
         sequence = payload.sequence,
         reason = result.reason,
+        ammo = playerData.ammo,
+        hitPosition = hitPosition,
     })
 
     -- Broadcast to other players (presentation only)
@@ -114,6 +146,91 @@ function WeaponService:HandleFireRequest(player, payload)
             })
         end
     end
+
+    -- Create visible tracer for all players
+    VisibleFireSystem.CreateTracer(rootPart.Position, payload.direction, character)
+
+    -- Apply damage if hit a valid target
+    if raycastResult then
+        local hitInstance = raycastResult.Instance
+        local hitModel = hitInstance:FindFirstAncestorOfClass("Model")
+        if hitModel and hitModel ~= character then
+            local humanoid = hitModel:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:TakeDamage(result.newState.damage)
+            end
+        end
+    end
+end
+
+function WeaponService:HandleReloadRequest(player)
+    local playerData = self.players[player]
+    if not playerData then
+        return
+    end
+
+    -- Validate alive state
+    if not playerData.alive then
+        ReloadEvent:FireClient(player, {
+            accepted = false,
+            reason = "Dead player",
+            ammo = playerData.ammo,
+        })
+        return
+    end
+
+    -- Prevent overlapping reloads
+    if playerData.reloading then
+        ReloadEvent:FireClient(player, {
+            accepted = false,
+            reason = "Already reloading",
+            ammo = playerData.ammo,
+        })
+        return
+    end
+
+    -- Check if already full
+    if playerData.ammo == WeaponConfig[WeaponTypes.AssaultRifle].magazineSize then
+        ReloadEvent:FireClient(player, {
+            accepted = false,
+            reason = "Already full",
+            ammo = playerData.ammo,
+        })
+        return
+    end
+
+    playerData.reloading = true
+
+    -- Wait for reload time
+    local reloadTime = WeaponConfig[WeaponTypes.AssaultRifle].reloadTime
+    task.wait(reloadTime)
+
+    -- Verify player still exists and is the same data
+    if self.players[player] ~= playerData then
+        return
+    end
+
+    -- Verify player still alive and reloading
+    if not playerData.alive or not playerData.reloading then
+        playerData.reloading = false
+        ReloadEvent:FireClient(player, {
+            accepted = false,
+            reason = "Reload cancelled",
+            ammo = playerData.ammo,
+        })
+        return
+    end
+
+    -- Restore ammo
+    playerData.ammo = WeaponConfig[WeaponTypes.AssaultRifle].magazineSize
+    playerData.reloading = false
+
+    -- Send back to client for UI update
+    ReloadEvent:FireClient(player, {
+        accepted = true,
+        reason = "Reloaded",
+        ammo = playerData.ammo,
+    })
 end
 
 function WeaponService:SetupPlayer(player)
@@ -122,6 +239,7 @@ function WeaponService:SetupPlayer(player)
         alive = true,
         lastSequence = 0,
         lastFire = 0,
+        reloading = false,
     }
     if not self.firstPlayer then
         self.firstPlayer = player
