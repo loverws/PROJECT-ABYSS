@@ -5,6 +5,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local WeaponAuthority = require(Shared.WeaponAuthority)
+local VisibleFireSystem = require(script.Parent.VisibleFireSystem)
 
 local RunService = game:GetService("RunService")
 
@@ -92,6 +93,8 @@ function WeaponService:HandleFireRequest(player, payload)
     playerData.ammo = result.newState.ammo
     playerData.lastFire = result.newState.lastFire
     playerData.lastSequence = result.newState.lastSequence
+
+    VisibleFireSystem.CreateTracer(rootPart.Position, payload.direction, character)
 
     -- Send back to client for prediction reconciliation
     RemoteEvent:FireClient(player, {
