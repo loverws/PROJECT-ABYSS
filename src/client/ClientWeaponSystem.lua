@@ -1,6 +1,7 @@
 -- Client-side weapon system
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 local RemoteEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ClientWeaponSystem = { sequence = 0 }
@@ -11,12 +12,18 @@ function ClientWeaponSystem:Init()
     end)
 end
 
-function ClientWeaponSystem:RequestFire(origin, direction)
+function ClientWeaponSystem:RequestFire(_origin, direction)
+    local character = Players.LocalPlayer.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return
+    end
+
     self.sequence += 1
     RemoteEvent:FireServer({
         weaponType = "AssaultRifle",
         sequence = self.sequence,
-        origin = origin,
+        origin = root.Position,
         direction = direction,
     })
 end
