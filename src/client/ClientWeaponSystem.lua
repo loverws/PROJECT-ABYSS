@@ -48,7 +48,7 @@ function ClientWeaponSystem:RequestFire(direction)
         self.AmmoUpdated(self.ammo)
     end
 
-    -- Create muzzle flash and tracer locally
+    -- Create muzzle flash and impact feedback
     local camera = Workspace.CurrentCamera
     if camera then
         local origin = camera.CFrame.Position
@@ -68,32 +68,12 @@ function ClientWeaponSystem:RequestFire(direction)
         -- Remove after short time
         game:GetService("Debris"):AddItem(flash, 0.05)
 
-        -- Tracer
+        -- Tracer is created server-side by VisibleFireSystem; raycast is local impact feedback.
         local raycastParams = RaycastParams.new()
         raycastParams.FilterType = Enum.RaycastFilterType.Exclude
         raycastParams.FilterDescendantsInstances = { character }
 
         local raycastResult = Workspace:Raycast(origin, shotDirection * 300, raycastParams)
-        local endpoint = if raycastResult
-            then raycastResult.Position
-            else origin + shotDirection * 300
-
-        local tracer = Instance.new("Part")
-        tracer.Name = "FireTracer"
-        local length = (endpoint - origin).Magnitude
-        tracer.Size = Vector3.new(0.05, 0.05, length)
-        tracer.CFrame = CFrame.lookAt(
-            self:GetMuzzleCFrame().Position + (endpoint - self:GetMuzzleCFrame().Position) / 2,
-            endpoint
-        )
-        tracer.Anchored = true
-        tracer.CanCollide = false
-        tracer.Material = Enum.Material.Neon
-        tracer.Color = Color3.fromRGB(255, 225, 64)
-        tracer.LocalTransparencyModifier = 0.5
-        tracer.Parent = Workspace
-
-        game:GetService("Debris"):AddItem(tracer, 0.15)
 
         -- Impact marker
         if raycastResult then
