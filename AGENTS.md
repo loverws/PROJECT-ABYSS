@@ -74,6 +74,7 @@ Load the smallest applicable repository skill under .agents/skills:
 - roblox-test-evidence
 - abyss-git-checkpoint
 - abyss-status-report
+- abyss-product-direction
 
 ## Completion
 
