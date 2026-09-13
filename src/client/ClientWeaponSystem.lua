@@ -95,7 +95,7 @@ function ClientWeaponSystem:RequestFire(direction)
 
     -- Recoil effect
     if self.AddRecoil then
-        self:AddRecoil()
+        self:AddRecoil(self.weaponType or "AssaultRifle", false)
     end
 
     RemoteEvent:FireServer({
