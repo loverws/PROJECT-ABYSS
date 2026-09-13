@@ -3,11 +3,14 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local client = player:WaitForChild("PlayerScripts"):WaitForChild("Client")
 local clientWeaponSystem = require(client:WaitForChild("ClientWeaponSystem"))
+local RecoilProfiles =
+    require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RecoilProfiles"))
 
 -- Create UI elements
 local screenGui = Instance.new("ScreenGui")
@@ -99,9 +102,12 @@ local sightOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -1.0)
 
 -- Recoil state
 local recoilPitch = 0
+local recoilYaw = 0
+local shotCount = 0
+local activeProfile = nil
 
 -- Update viewmodel position and recoil on RenderStepped
-local function updateViewModel()
+local function updateViewModel(deltaTime)
     local camera = Workspace.CurrentCamera
     if not camera then
         return
@@ -116,10 +122,25 @@ local function updateViewModel()
     muzzleMarker.CFrame = camera.CFrame * CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -0.5)
 
     -- Apply recoil effect
-    if recoilPitch > 0 then
-        local pitch = math.min(recoilPitch, 0.1)
-        camera.CFrame = camera.CFrame * CFrame.Angles(pitch, 0, 0)
-        recoilPitch = math.max(0, recoilPitch - 0.02)
+    if activeProfile then
+        camera.CFrame = camera.CFrame * CFrame.Angles(recoilPitch, recoilYaw, 0)
+
+        local recoveryAmount = activeProfile.recoverySpeed * deltaTime
+
+        recoilPitch = math.max(0, recoilPitch - recoveryAmount)
+
+        if recoilYaw > 0 then
+            recoilYaw = math.max(0, recoilYaw - recoveryAmount)
+        elseif recoilYaw < 0 then
+            recoilYaw = math.min(0, recoilYaw + recoveryAmount)
+        end
+
+        if recoilPitch <= 0.001 and math.abs(recoilYaw) <= 0.001 then
+            recoilPitch = 0
+            recoilYaw = 0
+            shotCount = 0
+            activeProfile = nil
+        end
     end
 end
 
@@ -129,8 +150,25 @@ clientWeaponSystem.AmmoUpdated = function(ammo)
 end
 
 -- Add recoil function
-clientWeaponSystem.AddRecoil = function()
-    recoilPitch = math.min(recoilPitch + 0.05, 0.1)
+clientWeaponSystem.AddRecoil = function(weaponType, isAds)
+    local profile = RecoilProfiles.Get(weaponType or "AssaultRifle")
+
+    local multiplier = isAds and profile.adsMultiplier or profile.hipMultiplier
+    local shotMultiplier = shotCount == 0 and profile.firstShotMultiplier or 1
+    local sustainedKick = shotCount == 0 and 0 or profile.sustainedIncrement
+
+    local verticalDelta = (profile.verticalKick * shotMultiplier + sustainedKick) * multiplier
+    local horizontalDeltaMagnitude = profile.horizontalKick * shotMultiplier * multiplier
+
+    -- Give horizontal delta a random sign
+    local horizontalDelta = horizontalDeltaMagnitude * (math.random() > 0.5 and 1 or -1)
+
+    recoilPitch = math.clamp(recoilPitch + verticalDelta, 0, profile.maxVertical)
+    recoilYaw =
+        math.clamp(recoilYaw + horizontalDelta, -profile.maxHorizontal, profile.maxHorizontal)
+
+    shotCount = shotCount + 1
+    activeProfile = profile
 end
 
 -- Set camera mode
