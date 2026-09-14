@@ -5,7 +5,6 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local WeaponAuthority = require(Shared.WeaponAuthority)
-local VisibleFireSystem = require(script.Parent.VisibleFireSystem)
 
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -120,11 +119,13 @@ function WeaponService:HandleFireRequest(player, payload)
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
     raycastParams.FilterDescendantsInstances = { character }
 
+    -- WeaponAuthority has already type-, finite-, and proximity-validated this origin.
+    local acceptedOrigin = payload.origin
     local unitDirection = payload.direction.Unit
-    local raycastResult = Workspace:Raycast(rootPart.Position, unitDirection * 300, raycastParams)
+    local raycastResult = Workspace:Raycast(acceptedOrigin, unitDirection * 300, raycastParams)
     local hitPosition = if raycastResult
         then raycastResult.Position
-        else rootPart.Position + unitDirection * 300
+        else acceptedOrigin + unitDirection * 300
 
     -- Send back to client for prediction reconciliation
     RemoteEvent:FireClient(player, {
@@ -143,12 +144,12 @@ function WeaponService:HandleFireRequest(player, payload)
                 sequence = payload.sequence,
                 reason = result.reason,
                 presentationOnly = true,
+                -- Presentation only: do not expose the gameplay camera-ray origin as a muzzle.
+                presentationOrigin = rootPart.Position,
+                hitPosition = hitPosition,
             })
         end
     end
-
-    -- Create visible tracer for all players
-    VisibleFireSystem.CreateTracer(rootPart.Position, payload.direction, character)
 
     -- Apply damage if hit a valid target
     if raycastResult then

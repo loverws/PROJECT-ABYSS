@@ -15,16 +15,26 @@ local RecoilProfiles =
 -- Create UI elements
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FirstPersonUI"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local crosshair = Instance.new("Frame")
+local crosshair = Instance.new("TextLabel")
 crosshair.Name = "Crosshair"
-crosshair.Size = UDim2.fromOffset(20, 20)
+crosshair.Size = UDim2.fromOffset(24, 24)
 crosshair.Position = UDim2.fromScale(0.5, 0.5)
 crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
-crosshair.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-crosshair.BackgroundTransparency = 0.7
-
+crosshair.BackgroundTransparency = 1
+crosshair.Text = "+"
+crosshair.TextColor3 = Color3.fromRGB(255, 255, 255)
+crosshair.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+crosshair.TextStrokeTransparency = 0
+crosshair.TextScaled = true
+crosshair.Font = Enum.Font.GothamBold
+crosshair.Active = false
+crosshair.Interactable = false
+crosshair.Selectable = false
+crosshair.ZIndex = 10
 crosshair.Parent = screenGui
 
 local ammoLabel = Instance.new("TextLabel")
@@ -342,8 +352,9 @@ end
 
 -- Set camera mode
 player.CameraMode = Enum.CameraMode.LockFirstPerson
-local MOUSE_SENSITIVITY = 0.35
+local MOUSE_SENSITIVITY = 0.18
 UserInputService.MouseDeltaSensitivity = MOUSE_SENSITIVITY
+UserInputService.MouseIconEnabled = false
 
 -- Bind reload key
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
@@ -355,13 +366,7 @@ end)
 -- Add fire handler connection using input.UserInputType == Enum.UserInputType.MouseButton1
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessedEvent then
-        local camera = Workspace.CurrentCamera
-        if not camera then
-            return
-        end
-
-        -- Request fire
-        clientWeaponSystem:RequestFire(camera.CFrame.LookVector)
+        clientWeaponSystem:RequestFire()
     end
 end)
 
@@ -381,6 +386,8 @@ end
 -- Bind to SetEquippedChanged callback
 clientWeaponSystem.SetEquippedChanged = function()
     setViewModelVisibility()
+    crosshair.Visible = clientWeaponSystem.equipped
+    UserInputService.MouseIconEnabled = not clientWeaponSystem.equipped
 end
 
 -- Setup viewmodel as camera child

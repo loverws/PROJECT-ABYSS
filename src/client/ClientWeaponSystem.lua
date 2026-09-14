@@ -3,6 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 
 local RemoteEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ReloadEvent = ReplicatedStorage:WaitForChild("ReloadWeapon")
@@ -19,10 +21,63 @@ function ClientWeaponSystem:Init()
     end)
 end
 
-function ClientWeaponSystem:RequestFire(direction)
+local AIM_RANGE = 300
+
+function ClientWeaponSystem:GetCenterAim(camera, character)
+    local viewportSize = camera.ViewportSize
+    local centerRay = camera:ViewportPointToRay(viewportSize.X / 2, viewportSize.Y / 2)
+    local shotDirection = centerRay.Direction.Unit
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = { character }
+
+    local raycastResult =
+        Workspace:Raycast(centerRay.Origin, shotDirection * AIM_RANGE, raycastParams)
+    local aimPoint = if raycastResult
+        then raycastResult.Position
+        else centerRay.Origin + shotDirection * AIM_RANGE
+
+    return centerRay.Origin, shotDirection, aimPoint, raycastResult
+end
+
+function ClientWeaponSystem:CreateTracer(origin, endpoint)
+    local travelVector = endpoint - origin
+    local distance = travelVector.Magnitude
+    if distance < 0.01 then
+        return
+    end
+
+    local unitDirection = travelVector.Unit
+    local startPosition = origin + unitDirection * 0.8
+    local bullet = Instance.new("Part")
+    bullet.Name = "VisualBullet"
+    bullet.Size = Vector3.new(0.12, 0.12, 0.6)
+    bullet.CFrame = CFrame.lookAt(startPosition, startPosition + unitDirection)
+    bullet.Anchored = true
+    bullet.CanCollide = false
+    bullet.CanTouch = false
+    bullet.CanQuery = false
+    bullet.Massless = true
+    bullet.Material = Enum.Material.Neon
+    bullet.Color = Color3.fromRGB(255, 210, 120)
+    bullet.Parent = Workspace
+
+    local travelTime = math.clamp(distance / 300, 0.04, 0.7)
+    local tween = TweenService:Create(
+        bullet,
+        TweenInfo.new(travelTime, Enum.EasingStyle.Linear),
+        { CFrame = CFrame.lookAt(endpoint, endpoint + unitDirection) }
+    )
+    Debris:AddItem(bullet, travelTime + 0.08)
+    tween:Play()
+end
+
+function ClientWeaponSystem:RequestFire()
     local character = Players.LocalPlayer.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
-    if not root then
+    local camera = Workspace.CurrentCamera
+    if not root or not camera then
         return
     end
 
@@ -32,12 +87,11 @@ function ClientWeaponSystem:RequestFire(direction)
         return
     end
 
-    -- Validate direction
-    if typeof(direction) ~= "Vector3" or direction.Magnitude < 0.001 then
-        return
-    end
-
-    local shotDirection = direction.Unit
+    -- Capture the current post-camera/recoil center ray before applying this shot's recoil.
+    local gameplayOrigin, shotDirection, aimPoint, raycastResult =
+        self:GetCenterAim(camera, character)
+    local muzzleCFrame = self:GetMuzzleCFrame()
+    self:CreateTracer(muzzleCFrame.Position, aimPoint)
 
     self.sequence += 1
     self.lastFire = now
@@ -49,15 +103,12 @@ function ClientWeaponSystem:RequestFire(direction)
     end
 
     -- Create muzzle flash and impact feedback
-    local camera = Workspace.CurrentCamera
     if camera then
-        local origin = camera.CFrame.Position
-
         -- Muzzle flash
         local flash = Instance.new("Part")
         flash.Name = "MuzzleFlash"
         flash.Size = Vector3.new(0.1, 0.1, 0.2)
-        flash.CFrame = self:GetMuzzleCFrame() * CFrame.new(0, 0, -0.5)
+        flash.CFrame = muzzleCFrame * CFrame.new(0, 0, -0.5)
         flash.Anchored = true
         flash.CanCollide = false
         flash.Material = Enum.Material.Neon
@@ -67,13 +118,6 @@ function ClientWeaponSystem:RequestFire(direction)
 
         -- Remove after short time
         game:GetService("Debris"):AddItem(flash, 0.05)
-
-        -- Tracer is created server-side by VisibleFireSystem; raycast is local impact feedback.
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-        raycastParams.FilterDescendantsInstances = { character }
-
-        local raycastResult = Workspace:Raycast(origin, shotDirection * 300, raycastParams)
 
         -- Impact marker
         if raycastResult then
@@ -101,7 +145,9 @@ function ClientWeaponSystem:RequestFire(direction)
     RemoteEvent:FireServer({
         weaponType = "AssaultRifle",
         sequence = self.sequence,
-        origin = root.Position,
+        -- Gameplay ray origin and direction are the exact center-screen camera ray.
+        -- The muzzle remains presentation-only.
+        origin = gameplayOrigin,
         direction = shotDirection,
     })
 end
@@ -112,6 +158,14 @@ function ClientWeaponSystem:HandleServerResponse(payload)
     end
 
     if payload.accepted then
+        if
+            payload.presentationOnly
+            and typeof(payload.presentationOrigin) == "Vector3"
+            and typeof(payload.hitPosition) == "Vector3"
+        then
+            self:CreateTracer(payload.presentationOrigin, payload.hitPosition)
+        end
+
         -- Update ammo UI
         if not payload.presentationOnly then
             self.ammo = payload.ammo
