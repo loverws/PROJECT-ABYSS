@@ -1,5 +1,10 @@
 # PROJECT ABYSS Agent Instructions
 
+## Canonical AI workflow (read first)
+
+The authoritative cross-account workflow is `C:\LEOS_games\orchestrator\config\CHATGPT_WORK_CODEX_HANDOFF.md`.
+ChatGPT Work is Director/QA only. The different-account Codex running on the LEOS server is the primary implementation coder. Local Qwen is fallback only after LEOS Codex usage is exhausted. Do not use a same-account sub-agent as the gameplay coder.
+
 ## Canonical scope
 
 Work only inside this repository unless a task explicitly authorizes the sibling Orchestrator runtime.
