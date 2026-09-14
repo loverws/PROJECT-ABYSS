@@ -8,7 +8,7 @@ local function createImpact(position)
     local impact = Instance.new("Part")
     impact.Name = "BulletImpact"
     impact.Shape = Enum.PartType.Ball
-    impact.Size = Vector3.new(0.3, 0.3, 0.3)
+    impact.Size = Vector3.new(0.22, 0.22, 0.22)
     impact.CFrame = CFrame.new(position)
     impact.Anchored = true
     impact.CanCollide = false
@@ -30,17 +30,17 @@ function VisibleFireSystem.CreateTracer(origin, direction, character)
     raycastParams.FilterDescendantsInstances = { character }
 
     local unitDirection = direction.Unit
-    local raycastResult = Workspace:Raycast(origin, unitDirection * 300, raycastParams)
-    local endpoint = if raycastResult then raycastResult.Position else origin + unitDirection * 300
+    local raycastResult = Workspace:Raycast(origin, unitDirection * 250, raycastParams)
+    local endpoint = if raycastResult then raycastResult.Position else origin + unitDirection * 250
     local distance = (endpoint - origin).Magnitude
     if distance < 0.01 then
         return nil
     end
 
-    local startPosition = origin + unitDirection * 0.7
+    local startPosition = origin + unitDirection * 0.8
     local bullet = Instance.new("Part")
     bullet.Name = "VisualBullet"
-    bullet.Size = Vector3.new(0.12, 0.12, 1.4)
+    bullet.Size = Vector3.new(0.12, 0.12, 0.6)
     bullet.CFrame = CFrame.lookAt(startPosition, startPosition + unitDirection)
     bullet.Anchored = true
     bullet.CanCollide = false
@@ -48,10 +48,10 @@ function VisibleFireSystem.CreateTracer(origin, direction, character)
     bullet.CanQuery = false
     bullet.Massless = true
     bullet.Material = Enum.Material.Neon
-    bullet.Color = Color3.fromRGB(255, 235, 150)
+    bullet.Color = Color3.fromRGB(255, 210, 120)
     bullet.Parent = Workspace
 
-    local travelTime = math.clamp(distance / 600, 0.03, 0.25)
+    local travelTime = math.clamp(distance / 300, 0.04, 0.7)
     local goalCFrame = CFrame.lookAt(endpoint, endpoint + unitDirection)
     local tween = TweenService:Create(
         bullet,
@@ -73,7 +73,7 @@ function VisibleFireSystem.CreateTracer(origin, direction, character)
         end
     end)
 
-    Debris:AddItem(bullet, travelTime + 0.1)
+    Debris:AddItem(bullet, travelTime + 0.08)
     tween:Play()
     return bullet
 end
