@@ -155,43 +155,20 @@ local viewModelParts = {
 -- Set base offset
 local baseOffset = CFrame.new(0.72, -0.78, -1.55)
 
--- Set up part positions relative to base offset
-local function setupPartPositions()
-    -- Receiver (base)
-    receiver.CFrame = baseOffset
-    
-    -- UpperReceiver above receiver
-    upperReceiver.CFrame = baseOffset * CFrame.new(0, 0.2, 0)
-    
-    -- Handguard toward negative Z from receiver
-    handguard.CFrame = baseOffset * CFrame.new(0, 0, -0.6)
-    
-    -- Barrel farther negative Z
-    barrel.CFrame = baseOffset * CFrame.new(0, 0, -1.2)
-    
-    -- MuzzleDevice at end of barrel
-    muzzleDevice.CFrame = baseOffset * CFrame.new(0, 0, -1.7)
-    
-    -- Stock positive Z
-    stock.CFrame = baseOffset * CFrame.new(0, 0, 1.2)
-    
-    -- PistolGrip below receiver, angled about -15 degrees on X
-    pistolGrip.CFrame = baseOffset * CFrame.new(0, -0.3, -0.3) * CFrame.Angles(-0.26, 0, 0)
-    
-    -- Magazine below receiver, angled about -15 degrees on X
-    magazine.CFrame = baseOffset * CFrame.new(0, -0.3, 0.3) * CFrame.Angles(-0.26, 0, 0)
-    
-    -- SightBase above receiver
-    sightBase.CFrame = baseOffset * CFrame.new(0, 0.25, -0.3)
-    
-    -- SightHousing above sight base
-    sightHousing.CFrame = baseOffset * CFrame.new(0, 0.3, -0.3)
-    
-    -- Muzzle transparent 1
-    muzzle.Material = Enum.Material.Neon
-    muzzle.Color = Color3.fromRGB(255, 255, 255)
-    muzzle.LocalTransparencyModifier = 1
-end
+-- Record distinct offsets for each part
+local partOffsets = {
+    receiver = CFrame.new(0, 0, 0),
+    upperReceiver = CFrame.new(0, 0.2, 0),
+    handguard = CFrame.new(0, 0, -0.6),
+    barrel = CFrame.new(0, 0, -1.2),
+    muzzleDevice = CFrame.new(0, 0, -1.7),
+    stock = CFrame.new(0, 0, 1.2),
+    pistolGrip = CFrame.new(0, -0.3, -0.3) * CFrame.Angles(-0.26, 0, 0),
+    magazine = CFrame.new(0, -0.3, 0.3) * CFrame.Angles(-0.26, 0, 0),
+    sightBase = CFrame.new(0, 0.25, -0.3),
+    sightHousing = CFrame.new(0, 0.3, -0.3),
+    muzzle = CFrame.new(0, 0, 0)
+}
 
 -- Recoil state
 local recoilPitch = 0
@@ -208,9 +185,12 @@ local function updateViewModel(deltaTime)
         return
     end
 
-    -- Position all parts in front of camera using base offset
+    -- Position each part with its distinct offset
     for _, part in ipairs(viewModelParts) do
-        part.CFrame = camera.CFrame * baseOffset
+        local offset = partOffsets[part.Name]
+        if offset then
+            part.CFrame = camera.CFrame * offset
+        end
     end
 
     -- Apply recoil effect
@@ -317,7 +297,12 @@ end)
 local function setViewModelVisibility()
     local transparency = clientWeaponSystem.equipped and 0 or 1
     for _, part in ipairs(viewModelParts) do
-        part.LocalTransparencyModifier = transparency
+        if part.Name == "Muzzle" then
+            -- Muzzle must remain at transparency 1
+            part.LocalTransparencyModifier = 1
+        else
+            part.LocalTransparencyModifier = transparency
+        end
     end
 end
 
@@ -334,33 +319,8 @@ end
 -- Initial visibility setup
 clientWeaponSystem:SetEquipped(true)
 setViewModelVisibility()
-setupPartPositions()
 
 -- Connect to RenderStepped for updates
 RunService.RenderStepped:Connect(updateViewModel)
 
--- Remove auto-equip logic
--- Auto-equip weapon on character spawn
--- local function onCharacterAdded(character)
---     local humanoid = character:WaitForChild("Humanoid", 5)
---     if not humanoid then
---         return
---     end
---
---     -- Wait for the tool to be in the backpack with timeout
---     local tool = player.Backpack:FindFirstChild("AssaultRifle")
---     if not tool then
---         tool = player.Backpack:WaitForChild("AssaultRifle", 5)
---     end
---
---     if tool and tool:IsA("Tool") then
---         humanoid:EquipTool(tool)
---     end
--- end
-
--- player.CharacterAdded:Connect(onCharacterAdded)
-
--- Initial check in case character already exists
--- if player.Character then
---     onCharacterAdded(player.Character)
--- end
+-- Tool auto-equip is intentionally disabled to avoid duplicate Tool.Activated firing.
