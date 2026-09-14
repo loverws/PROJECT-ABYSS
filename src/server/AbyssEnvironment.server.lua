@@ -62,8 +62,8 @@ makePart(
 -- Boundary walls: 4 walls, 12 high, off-white concrete/smoothplastic
 local wallThickness = 1
 local wallHeight = 12
-local wallLength = 100
-local wallWidth = 80
+local wallLength = 80
+local wallWidth = 100
 
 -- North wall
 makePart(
@@ -109,10 +109,6 @@ makePart(
 local panelWidth = 1
 local panelHeight = 0.04
 local panelLength = 1
-
--- Set arena bounds
-local arenaX = 80
-local arenaZ = 100
 
 -- Calculate spawn area centered near z=35, safe and unobstructed
 local spawnCFrame = CFrame.new(0, 0, 35)
