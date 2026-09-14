@@ -96,6 +96,17 @@ These are hypotheses, not confirmed causes:
 **Overall Stage 1: NOT PASS.**  
 **Next development stage (targets): BLOCKED.**
 
+## Mobile-first input ordering
+
+- Stage 1 input implementation and the next Human Gate are mobile only.
+- Roblox retains ownership of default touch movement, jump, and camera swipe; the game owns only
+  its explicit mobile fire button.
+- Desktop input/controller work begins later from a separate approved source/task, only after the
+  mobile real-phone Human Gate passes.
+- Mobile and desktop camera/input owners must never be active simultaneously.
+- This implementation does not constitute a Human PASS; real-phone camera swipe and control feel
+  remain pending owner verification.
+
 ## Planned Codex-to-Qwen implementation fallback
 
 This is an approved architecture proposal only; it has not been installed or activated during the HOLD.

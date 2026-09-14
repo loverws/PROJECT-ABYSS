@@ -14,6 +14,10 @@ Updated: 2026-09-10
 10. Mobile input pre-human preparation. [COMPLETE]
 11. Gate 2 protected PR integration to main. [COMPLETE]
 12. Real-phone control and feel validation. [CURRENT/PENDING]
+13. Desktop input/controller implementation from a separate approved source/task. [BLOCKED BY MOBILE HUMAN PASS]
 
 Do not freeze sensitivity, aim-assist, recoil, or physical-control constants before step 12 passes.
 Real-phone PASS requires owner/human evidence; device emulation is not a substitute.
+Stage 1 is mobile-first: complete the mobile implementation and real-phone Human Gate before
+starting desktop compatibility. Mobile and desktop camera/input controllers must never own the
+same input path simultaneously.

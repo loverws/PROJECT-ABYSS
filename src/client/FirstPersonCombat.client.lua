@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+local isTouchDevice = UserInputService.TouchEnabled
 local playerGui = player:WaitForChild("PlayerGui")
 local client = player:WaitForChild("PlayerScripts"):WaitForChild("Client")
 local clientWeaponSystem = require(client:WaitForChild("ClientWeaponSystem"))
@@ -353,22 +354,23 @@ end
 -- Set camera mode
 player.CameraMode = Enum.CameraMode.LockFirstPerson
 local MOUSE_SENSITIVITY = 0.18
-UserInputService.MouseDeltaSensitivity = MOUSE_SENSITIVITY
-UserInputService.MouseIconEnabled = false
+if not isTouchDevice then
+    UserInputService.MouseDeltaSensitivity = MOUSE_SENSITIVITY
+    UserInputService.MouseIconEnabled = false
 
--- Bind reload key
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if input.KeyCode == Enum.KeyCode.R and not gameProcessedEvent then
-        clientWeaponSystem:Reload()
-    end
-end)
+    -- Desktop input is intentionally isolated from the mobile controller.
+    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if input.KeyCode == Enum.KeyCode.R and not gameProcessedEvent then
+            clientWeaponSystem:Reload()
+        end
+    end)
 
--- Add fire handler connection using input.UserInputType == Enum.UserInputType.MouseButton1
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessedEvent then
-        clientWeaponSystem:RequestFire()
-    end
-end)
+    UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessedEvent then
+            clientWeaponSystem:RequestFire()
+        end
+    end)
+end
 
 -- Set up viewmodel visibility based on equipped state
 local function setViewModelVisibility()
@@ -387,7 +389,9 @@ end
 clientWeaponSystem.SetEquippedChanged = function()
     setViewModelVisibility()
     crosshair.Visible = clientWeaponSystem.equipped
-    UserInputService.MouseIconEnabled = not clientWeaponSystem.equipped
+    if not isTouchDevice then
+        UserInputService.MouseIconEnabled = not clientWeaponSystem.equipped
+    end
 end
 
 -- Setup viewmodel as camera child
