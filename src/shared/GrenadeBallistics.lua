@@ -4,7 +4,7 @@ local GrenadeBallistics = {}
 GrenadeBallistics.GRAVITY = 196.2
 GrenadeBallistics.MIN_SPEED = 52
 GrenadeBallistics.MAX_SPEED = 72
-GrenadeBallistics.BASE_UPWARD_SPEED = 28
+GrenadeBallistics.BASE_UPWARD_SPEED = 46
 
 function GrenadeBallistics.GetLaunchVelocity(lookDirection, charge)
     local unit = lookDirection.Magnitude > 0.001 and lookDirection.Unit or Vector3.new(0, 0, -1)

@@ -152,12 +152,12 @@ end
 function ClientWeaponSystem:ShowGrenadePreview(origin, direction, charge)
     self:ClearGrenadePreview()
     local velocity = GrenadeBallistics.GetLaunchVelocity(direction, charge)
-    for index = 1, 8 do
-        local sample = GrenadeBallistics.SamplePosition(origin, velocity, index * 0.08)
+    for index = 1, 11 do
+        local sample = GrenadeBallistics.SamplePosition(origin, velocity, index * 0.065)
         local dot = Instance.new("Part")
         dot.Name = "GrenadeArcPreview"
         dot.Shape = Enum.PartType.Ball
-        dot.Size = Vector3.new(0.12, 0.12, 0.12)
+        dot.Size = Vector3.new(0.1, 0.1, 0.1)
         dot.Color = Color3.fromRGB(255, 205, 80)
         dot.Material = Enum.Material.Neon
         dot.Anchored = true

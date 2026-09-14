@@ -17,23 +17,23 @@ const slotBlock = client.match(/local SLOT_WEAPONS = \{([\s\S]*?)\n\}/)[1];
 for (const token of ["[1] = WeaponTypes.AssaultRifle", "[2] = WeaponTypes.Pistol", "[3] = WeaponTypes.Fists", "[4] = WeaponTypes.Grenade"])
   assert(slotBlock.includes(token), "slot order mismatch: " + token);
 assert(!slotBlock.includes("WeaponTypes.Knife"), "knife replaced default fists slot");
-for (const token of ["LeftFist", "RightFist", "KnifeBlade", "PlayAttack", 'name == "Fists"', 'name == "Knife"'])
+for (const token of ["addFist(records, model, \"Left\"", "addFist(records, model, \"Right\"", 'side .. "Glove"', 'side .. "Knuckle"', "KnifeBlade", "PlayAttack", 'name == "Fists"', 'name == "Knife"'])
   assert(viewmodel.includes(token), "3D melee viewmodel/action missing: " + token);
 assert(client.includes("HitConfirmed") && camera.includes("crosshair.TextColor3 = Color3.fromRGB(255, 75, 75)"), "hit feedback missing");
 console.log("PASS: slot order, visible fists, retained 3D knife, attacks, and hit feedback are wired");
 
-for (const token of ["BASE_UPWARD_SPEED = 28", "horizontal * speed + Vector3.new(0", "SamplePosition", "-0.5 * GrenadeBallistics.GRAVITY"])
+for (const token of ["BASE_UPWARD_SPEED = 46", "horizontal * speed + Vector3.new(0", "SamplePosition", "-0.5 * GrenadeBallistics.GRAVITY"])
   assert(ballistics.includes(token), "ballistic contract missing: " + token);
 for (const token of ["PhysicalTrainingGrenade", "AssemblyLinearVelocity = velocity", "CanCollide = true", "CustomPhysicalProperties", "Touched:Connect", "fuseTime", "createExplosion"])
   assert(service.includes(token), "physical grenade path missing: " + token);
 for (const token of ["grenadeHoldStarted", "UpdateGrenadePreview", "GrenadeArcPreview", "RELEASE TO THROW"])
   assert(client.includes(token) || mobile.includes(token), "held mobile arc preview missing: " + token);
-const gravity = 196.2, up = 28, speed = 72, y = t => up * t - 0.5 * gravity * t * t;
-assert(y(.08) > 0 && y(.16) > y(.08) && y(.4) < y(.16), "trajectory lacks rise/apex/fall");
+const gravity = 196.2, up = 46, speed = 72, y = t => up * t - 0.5 * gravity * t * t;
+assert(y(.08) > 0 && y(.2) > y(.08) && y(.6) < y(.2), "trajectory lacks rise/apex/fall");
 assert(speed * .4 > speed * .16, "trajectory does not move forward");
 console.log("PASS: grenade leaves forward/upward, follows a parabola, bounces, fuses, and explodes");
 
-for (const token of ["AbyssTrainingRange", "RangeFloor", "FloorGridX", "FloorGridZ", "DownrangeSpawn", "CentralFireLane", "NearRangeMarker", "MidRangeMarker", "FarRangeMarker", "NearRedTarget", "MidRedTarget", "FarRedTarget", "MovementLane", "MovementRamp", "MovementPlatform", "LanePillar"])
+for (const token of ["AbyssTrainingRange", "RangeFloor", "FloorGridX", "FloorGridZ", "DownrangeSpawn", "CentralFireLane", "NearRangeMarker", "MidRangeMarker", "FarRangeMarker", "NearRedTarget", "MidRedTarget", "FarRedTarget", "MovementLane", "MovementRamp", "MovementPlatform", "RaisedDeck", "DeckRamp", "LanePillar"])
   assert(environment.includes(token), "range marker missing: " + token);
 assert(!environment.includes('"Ceiling"'), "open-sky range contains a ceiling");
 for (const token of ["NearDummy", "MidDummy", "FarDummy", "ServerAuthoritativeTarget", "Humanoid", "RESPAWN_TIME"])

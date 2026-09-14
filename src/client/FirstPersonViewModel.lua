@@ -1,4 +1,4 @@
--- Original primitive first-person models; no copied meshes or image-only weapons.
+-- Compact original low-poly first-person models; no copied meshes or flat weapon icons.
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -6,249 +6,287 @@ local FirstPersonViewModel = {}
 FirstPersonViewModel.__index = FirstPersonViewModel
 
 local SKIN = Color3.fromRGB(207, 151, 112)
-local DARK = Color3.fromRGB(35, 39, 46)
+local GLOVE = Color3.fromRGB(42, 48, 58)
+local DARK = Color3.fromRGB(30, 35, 43)
 local ORANGE = Color3.fromRGB(225, 105, 35)
-local STEEL = Color3.fromRGB(195, 210, 225)
+local STEEL = Color3.fromRGB(190, 205, 220)
 
-local function addRecord(records, model, name, size, color, offset, shape)
+local function add(records, model, name, size, color, offset, shape)
     local item = Instance.new("Part")
-    item.Name = name
-    item.Size = size
-    item.Color = color
+    item.Name, item.Size, item.Color = name, size, color
     item.Material = name:find("Blade") and Enum.Material.Metal or Enum.Material.SmoothPlastic
-    item.Shape = shape or Enum.PartType.Block
-    item.Anchored = true
-    item.CanCollide = false
-    item.CanQuery = false
-    item.CanTouch = false
-    item.CastShadow = false
+    item.Shape, item.Anchored = shape or Enum.PartType.Block, true
+    item.CanCollide, item.CanQuery, item.CanTouch, item.CastShadow = false, false, false, false
     item.Parent = model
     table.insert(records, { part = item, offset = offset })
-    return item
 end
 
-local function newWeapon(name)
+local function newModel(name)
     local model = Instance.new("Model")
     model.Name = "FP_" .. name
     return model, {}
 end
 
 local function buildRifle()
-    local model, records = newWeapon("AssaultRifle")
-    addRecord(
+    local model, records = newModel("AssaultRifle")
+    add(
         records,
         model,
-        "RifleBody",
-        Vector3.new(0.72, 0.32, 1.1),
+        "RifleReceiver",
+        Vector3.new(0.42, 0.25, 0.82),
         DARK,
         CFrame.new(0, 0, -0.35)
     )
-    addRecord(
+    add(
+        records,
+        model,
+        "RifleStock",
+        Vector3.new(0.34, 0.3, 0.62),
+        GLOVE,
+        CFrame.new(0, -0.02, 0.38)
+    )
+    add(
         records,
         model,
         "RifleHandguard",
-        Vector3.new(0.48, 0.28, 0.9),
+        Vector3.new(0.32, 0.22, 0.78),
         ORANGE,
-        CFrame.new(0, 0, -1.25)
+        CFrame.new(0, 0, -1.12)
     )
-    addRecord(
+    add(
         records,
         model,
         "RifleBarrel",
-        Vector3.new(0.12, 0.12, 1.0),
-        Color3.fromRGB(80, 85, 92),
-        CFrame.new(0, 0, -2.15)
+        Vector3.new(0.09, 0.09, 0.72),
+        STEEL,
+        CFrame.new(0, 0.02, -1.86)
     )
-    addRecord(
+    add(
+        records,
+        model,
+        "RifleSight",
+        Vector3.new(0.12, 0.14, 0.18),
+        STEEL,
+        CFrame.new(0, 0.23, -0.72)
+    )
+    add(
         records,
         model,
         "RifleMagazine",
-        Vector3.new(0.25, 0.62, 0.38),
-        DARK,
-        CFrame.Angles(-0.22, 0, 0) * CFrame.new(0, -0.35, 0)
+        Vector3.new(0.2, 0.46, 0.28),
+        GLOVE,
+        CFrame.new(0, -0.32, -0.2) * CFrame.Angles(math.rad(-12), 0, 0)
     )
-    addRecord(
+    add(
         records,
         model,
         "RifleRightHand",
-        Vector3.new(0.38, 0.42, 0.5),
+        Vector3.new(0.28, 0.3, 0.34),
         SKIN,
-        CFrame.new(0.08, -0.48, 0.15)
+        CFrame.new(0.05, -0.34, 0.16),
+        Enum.PartType.Ball
     )
-    addRecord(
+    add(
         records,
         model,
         "RifleLeftHand",
-        Vector3.new(0.38, 0.42, 0.5),
+        Vector3.new(0.28, 0.3, 0.34),
         SKIN,
-        CFrame.new(-0.05, -0.24, -1.25)
+        CFrame.new(-0.04, -0.2, -1.02),
+        Enum.PartType.Ball
     )
-    return model, records, CFrame.new(0.72, -0.7, -1.0)
+    return model, records, CFrame.new(0.48, -0.7, -1.5)
 end
 
 local function buildPistol()
-    local model, records = newWeapon("Pistol")
-    addRecord(
+    local model, records = newModel("Pistol")
+    add(
         records,
         model,
         "PistolSlide",
-        Vector3.new(0.38, 0.28, 1.15),
-        Color3.fromRGB(70, 75, 85),
-        CFrame.new(0, 0.1, -0.5)
+        Vector3.new(0.3, 0.2, 0.78),
+        STEEL,
+        CFrame.new(0, 0.1, -0.52)
     )
-    addRecord(
+    add(
+        records,
+        model,
+        "PistolFrame",
+        Vector3.new(0.25, 0.22, 0.58),
+        DARK,
+        CFrame.new(0, -0.08, -0.38)
+    )
+    add(
         records,
         model,
         "PistolMuzzle",
-        Vector3.new(0.22, 0.2, 0.18),
+        Vector3.new(0.17, 0.16, 0.14),
         DARK,
-        CFrame.new(0, 0.1, -1.15)
+        CFrame.new(0, 0.1, -0.98)
     )
-    addRecord(
+    add(
         records,
         model,
         "PistolGrip",
-        Vector3.new(0.34, 0.72, 0.38),
-        DARK,
-        CFrame.Angles(-0.2, 0, 0) * CFrame.new(0, -0.38, 0)
+        Vector3.new(0.27, 0.58, 0.3),
+        GLOVE,
+        CFrame.new(0, -0.38, -0.08) * CFrame.Angles(math.rad(-12), 0, 0)
     )
-    addRecord(
+    add(
         records,
         model,
         "PistolHand",
-        Vector3.new(0.43, 0.48, 0.5),
+        Vector3.new(0.34, 0.36, 0.38),
         SKIN,
-        CFrame.new(0.02, -0.52, 0.05)
+        CFrame.new(0, -0.47, 0.12),
+        Enum.PartType.Ball
     )
-    return model, records, CFrame.new(0.68, -0.62, -1.05)
+    add(
+        records,
+        model,
+        "PistolForearm",
+        Vector3.new(0.3, 0.3, 0.82),
+        SKIN,
+        CFrame.new(0.02, -0.56, 0.66)
+    )
+    return model, records, CFrame.new(0.5, -0.7, -1.52)
 end
 
 local function buildKnife()
-    local model, records = newWeapon("Knife")
-    addRecord(
+    local model, records = newModel("Knife")
+    add(
         records,
         model,
         "KnifeForearm",
-        Vector3.new(0.42, 0.48, 1.2),
+        Vector3.new(0.3, 0.3, 0.82),
         SKIN,
-        CFrame.Angles(math.rad(-18), 0, 0) * CFrame.new(0, -0.34, 0.35)
+        CFrame.new(0, -0.38, 0.42)
     )
-    addRecord(
+    add(
         records,
         model,
         "KnifeHand",
-        Vector3.new(0.46, 0.46, 0.5),
+        Vector3.new(0.34, 0.34, 0.38),
         SKIN,
-        CFrame.new(0, -0.08, -0.36)
+        CFrame.new(0, -0.18, -0.15),
+        Enum.PartType.Ball
     )
-    addRecord(
+    add(
         records,
         model,
         "KnifeGuard",
-        Vector3.new(0.7, 0.12, 0.18),
+        Vector3.new(0.48, 0.08, 0.13),
         DARK,
-        CFrame.new(0, -0.02, -0.68)
+        CFrame.new(0, -0.08, -0.43)
     )
-    addRecord(
+    add(
         records,
         model,
         "KnifeHandle",
-        Vector3.new(0.22, 0.22, 0.7),
-        DARK,
-        CFrame.new(0, -0.02, -0.75)
+        Vector3.new(0.16, 0.16, 0.52),
+        GLOVE,
+        CFrame.new(0, -0.08, -0.38)
     )
-    addRecord(
+    add(
         records,
         model,
         "KnifeBlade",
-        Vector3.new(0.18, 0.07, 1.65),
+        Vector3.new(0.12, 0.045, 1.12),
         STEEL,
-        CFrame.new(0, 0, -1.85)
+        CFrame.new(0, -0.04, -1.2)
     )
-    return model, records, CFrame.new(0.72, -0.55, -0.8) * CFrame.Angles(0, 0, math.rad(-18))
+    return model, records, CFrame.new(0.52, -0.68, -1.45) * CFrame.Angles(0, 0, math.rad(-14))
+end
+
+local function addFist(records, model, side, x)
+    add(
+        records,
+        model,
+        side .. "Forearm",
+        Vector3.new(0.28, 0.3, 0.82),
+        SKIN,
+        CFrame.new(x, -0.28, 0.28) * CFrame.Angles(math.rad(-10), 0, 0)
+    )
+    add(
+        records,
+        model,
+        side .. "Glove",
+        Vector3.new(0.4, 0.36, 0.42),
+        GLOVE,
+        CFrame.new(x, -0.04, -0.35),
+        Enum.PartType.Ball
+    )
+    for finger = -1, 1 do
+        add(
+            records,
+            model,
+            side .. "Knuckle" .. finger,
+            Vector3.new(0.11, 0.11, 0.13),
+            SKIN,
+            CFrame.new(x + finger * 0.12, 0.11, -0.54),
+            Enum.PartType.Ball
+        )
+    end
 end
 
 local function buildFists()
-    local model, records = newWeapon("Fists")
-    addRecord(
-        records,
-        model,
-        "LeftForearm",
-        Vector3.new(0.52, 0.54, 1.25),
-        SKIN,
-        CFrame.Angles(math.rad(-15), math.rad(-8), 0) * CFrame.new(-0.55, -0.18, 0.2)
-    )
-    addRecord(
-        records,
-        model,
-        "LeftFist",
-        Vector3.new(0.62, 0.62, 0.68),
-        SKIN,
-        CFrame.new(-0.54, 0, -0.62)
-    )
-    addRecord(
-        records,
-        model,
-        "RightForearm",
-        Vector3.new(0.52, 0.54, 1.25),
-        SKIN,
-        CFrame.Angles(math.rad(-15), math.rad(8), 0) * CFrame.new(0.55, -0.18, 0.2)
-    )
-    addRecord(
-        records,
-        model,
-        "RightFist",
-        Vector3.new(0.62, 0.62, 0.68),
-        SKIN,
-        CFrame.new(0.54, 0, -0.62)
-    )
-    return model, records, CFrame.new(0, -0.62, -1.05)
+    local model, records = newModel("Fists")
+    addFist(records, model, "Left", -0.43)
+    addFist(records, model, "Right", 0.43)
+    return model, records, CFrame.new(0, -0.68, -1.55)
 end
 
 local function buildGrenade()
-    local model, records = newWeapon("Grenade")
-    addRecord(
+    local model, records = newModel("Grenade")
+    add(
+        records,
+        model,
+        "GrenadeForearm",
+        Vector3.new(0.28, 0.3, 0.75),
+        SKIN,
+        CFrame.new(0, -0.38, 0.34)
+    )
+    add(
         records,
         model,
         "GrenadeHand",
-        Vector3.new(0.48, 0.5, 0.72),
+        Vector3.new(0.34, 0.34, 0.38),
         SKIN,
-        CFrame.new(0, -0.3, 0.1)
+        CFrame.new(0, -0.2, -0.17),
+        Enum.PartType.Ball
     )
-    addRecord(
+    add(
         records,
         model,
         "GrenadeBody",
-        Vector3.new(0.72, 0.72, 0.72),
+        Vector3.new(0.5, 0.5, 0.5),
         Color3.fromRGB(68, 84, 55),
-        CFrame.new(0, 0.02, -0.48),
+        CFrame.new(0, 0.04, -0.55),
         Enum.PartType.Ball
     )
-    addRecord(
+    add(
         records,
         model,
         "GrenadeBand",
-        Vector3.new(0.76, 0.14, 0.76),
+        Vector3.new(0.53, 0.09, 0.53),
         DARK,
-        CFrame.new(0, 0.02, -0.48)
+        CFrame.new(0, 0.04, -0.55)
     )
-    addRecord(
+    add(
         records,
         model,
         "GrenadeLever",
-        Vector3.new(0.18, 0.12, 0.55),
-        Color3.fromRGB(115, 120, 105),
-        CFrame.new(0.12, 0.42, -0.42)
+        Vector3.new(0.12, 0.08, 0.38),
+        STEEL,
+        CFrame.new(0.09, 0.32, -0.5)
     )
-    return model, records, CFrame.new(0.7, -0.55, -1.05)
+    return model, records, CFrame.new(0.5, -0.68, -1.55)
 end
 
 function FirstPersonViewModel.new()
     local self = setmetatable({}, FirstPersonViewModel)
-    self.animation = Instance.new("CFrameValue")
-    self.models = {}
-    self.current = "AssaultRifle"
-    self.punchSide = 1
+    self.animation, self.punch = Instance.new("CFrameValue"), Instance.new("NumberValue")
+    self.models, self.current, self.punchSide = {}, "AssaultRifle", "Left"
     for name, builder in pairs({
         AssaultRifle = buildRifle,
         Pistol = buildPistol,
@@ -274,8 +312,8 @@ function FirstPersonViewModel:SetCamera(camera)
 end
 
 function FirstPersonViewModel:SetWeapon(name)
-    self.current = self.models[name] and name or "Fists"
-    self.animation.Value = CFrame.identity
+    self.current, self.animation.Value, self.punch.Value =
+        self.models[name] and name or "Fists", CFrame.identity, 0
     for weaponName, data in pairs(self.models) do
         for _, record in ipairs(data.records) do
             record.part.LocalTransparencyModifier = weaponName == self.current and 0 or 1
@@ -290,35 +328,51 @@ function FirstPersonViewModel:Update(cameraCFrame)
     end
     local root = cameraCFrame * data.base * self.animation.Value
     for _, record in ipairs(data.records) do
-        record.part.CFrame = root * record.offset
+        local pose = CFrame.identity
+        if self.current == "Fists" and record.part.Name:find(self.punchSide) == 1 then
+            pose = CFrame.new(0, 0.08 * self.punch.Value, -0.62 * self.punch.Value)
+        end
+        record.part.CFrame = root * pose * record.offset
     end
 end
 
 function FirstPersonViewModel:PlayAttack(name)
-    self.animation.Value = CFrame.identity
-    local target
-    if name == "Knife" then
-        target = CFrame.new(-0.38, 0.24, -0.45)
-            * CFrame.Angles(math.rad(-18), math.rad(-20), math.rad(-78))
-    elseif name == "Fists" then
-        self.punchSide *= -1
-        target = CFrame.new(0.48 * self.punchSide, 0.22, -1.0)
-            * CFrame.Angles(math.rad(-10), 0, math.rad(8 * self.punchSide))
-    elseif name == "Grenade" then
-        target = CFrame.new(-0.15, 0.62, -0.42) * CFrame.Angles(math.rad(-65), 0, 0)
-    else
-        target = CFrame.new(0, 0.03, 0.12) * CFrame.Angles(math.rad(3), 0, 0)
+    self.animation.Value, self.punch.Value = CFrame.identity, 0
+    if name == "Fists" then
+        self.punchSide = self.punchSide == "Left" and "Right" or "Left"
+        local out = TweenService:Create(
+            self.punch,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { Value = 1 }
+        )
+        out:Play()
+        out.Completed:Once(function()
+            TweenService:Create(
+                self.punch,
+                TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                { Value = 0 }
+            ):Play()
+        end)
+        return
     end
-    local outTween = TweenService:Create(
+    local target = name == "Knife"
+            and CFrame.new(-0.18, 0.1, -0.42) * CFrame.Angles(
+                math.rad(-12),
+                math.rad(-16),
+                math.rad(-55)
+            )
+        or name == "Grenade" and CFrame.new(-0.08, 0.34, -0.2) * CFrame.Angles(math.rad(-38), 0, 0)
+        or CFrame.new(0, 0.02, 0.08) * CFrame.Angles(math.rad(2), 0, 0)
+    local out = TweenService:Create(
         self.animation,
-        TweenInfo.new(0.09, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
         { Value = target }
     )
-    outTween:Play()
-    outTween.Completed:Once(function()
+    out:Play()
+    out.Completed:Once(function()
         TweenService:Create(
             self.animation,
-            TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+            TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
             { Value = CFrame.identity }
         ):Play()
     end)
@@ -327,11 +381,12 @@ end
 function FirstPersonViewModel:GetMuzzleCFrame(cameraCFrame)
     local data = self.models[self.current]
     if self.current == "AssaultRifle" then
-        return cameraCFrame * data.base * CFrame.new(0, 0, -2.7)
-    elseif self.current == "Pistol" then
-        return cameraCFrame * data.base * CFrame.new(0, 0.1, -1.35)
+        return cameraCFrame * data.base * CFrame.new(0, 0, -2.25)
     end
-    return cameraCFrame * data.base * CFrame.new(0, 0, -0.8)
+    if self.current == "Pistol" then
+        return cameraCFrame * data.base * CFrame.new(0, 0.1, -1.08)
+    end
+    return cameraCFrame * data.base * CFrame.new(0, 0, -0.7)
 end
 
 return FirstPersonViewModel

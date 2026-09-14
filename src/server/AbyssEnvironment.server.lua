@@ -15,6 +15,7 @@ range.Parent = Workspace
 local WHITE = Color3.fromRGB(239, 242, 246)
 local LIGHT_GRAY = Color3.fromRGB(205, 211, 220)
 local GRID = Color3.fromRGB(150, 160, 174)
+local DARK = Color3.fromRGB(36, 43, 54)
 local RED = Color3.fromRGB(226, 53, 62)
 local ORANGE = Color3.fromRGB(242, 126, 45)
 local BLUE = Color3.fromRGB(48, 139, 224)
@@ -30,10 +31,10 @@ local function part(name, size, cframe, color, collidable)
     return item
 end
 
-local function label(adornee, text, color)
+local function label(adornee, text, color, offset)
     local billboard = Instance.new("BillboardGui")
     billboard.Name, billboard.Adornee = "DistanceLabel", adornee
-    billboard.Size, billboard.StudsOffset = UDim2.fromOffset(150, 36), Vector3.new(0, 4.4, 0)
+    billboard.Size, billboard.StudsOffset = UDim2.fromOffset(88, 22), offset or Vector3.new(0, 2, 0)
     billboard.AlwaysOnTop, billboard.Parent = true, adornee
     local value = Instance.new("TextLabel")
     value.Size, value.BackgroundTransparency = UDim2.fromScale(1, 1), 0.18
@@ -64,7 +65,8 @@ spawn.Name, spawn.Size = "DownrangeSpawn", Vector3.new(8, 0.5, 8)
 spawn.CFrame = CFrame.lookAt(Vector3.new(0, 0.25, 82), Vector3.new(0, 0.25, -100))
 spawn.Color, spawn.Material = BLUE, Enum.Material.Neon
 spawn.Anchored, spawn.CanCollide, spawn.Neutral, spawn.Parent = true, true, true, range
-label(spawn, "TRAINING RANGE", Color3.fromRGB(135, 211, 255))
+local rangeSign = part("RangeSign", Vector3.new(5, 3, 0.4), CFrame.new(-43, 2.6, 75), DARK, false)
+label(rangeSign, "TRAINING", Color3.fromRGB(135, 211, 255), Vector3.new(0, 0, 0))
 
 local lane =
     part("CentralFireLane", Vector3.new(24, 0.08, 228), CFrame.new(0, 0.07, -34), LIGHT_GRAY, false)
@@ -77,7 +79,7 @@ for _, marker in ipairs({
     local stripe =
         part(marker.name, Vector3.new(24, 0.12, 0.8), CFrame.new(0, 0.13, marker.z), RED, false)
     stripe:SetAttribute("DistanceText", marker.text)
-    label(stripe, marker.text, Color3.fromRGB(255, 120, 120))
+    label(stripe, marker.text, Color3.fromRGB(255, 120, 120), Vector3.new(-9, 1.1, 0))
 end
 
 local function plateTarget(name, position, scale)
@@ -130,6 +132,34 @@ for index, z in ipairs({ 36, -28, -92 }) do
         Vector3.new(15, 1, 13),
         CFrame.new(-38, 4.6, z - 12),
         index % 2 == 0 and BLUE or ORANGE,
+        true
+    )
+end
+for index, deck in ipairs({
+    { x = -18, z = 24, color = ORANGE },
+    { x = 18, z = -22, color = BLUE },
+    { x = -18, z = -70, color = BLUE },
+    { x = 18, z = -112, color = ORANGE },
+}) do
+    part(
+        "RaisedDeck" .. index,
+        Vector3.new(13, 1, 12),
+        CFrame.new(deck.x, 5, deck.z),
+        deck.color,
+        true
+    )
+    part(
+        "DeckSupport" .. index,
+        Vector3.new(2, 9, 2),
+        CFrame.new(deck.x, 4.5, deck.z),
+        LIGHT_GRAY,
+        true
+    )
+    part(
+        "DeckRamp" .. index,
+        Vector3.new(8, 0.8, 15),
+        CFrame.new(deck.x, 2.45, deck.z + 11) * CFrame.Angles(math.rad(18), 0, 0),
+        WHITE,
         true
     )
 end
