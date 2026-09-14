@@ -1,14 +1,56 @@
--- Shared weapon configuration
+-- Shared mobile-first loadout configuration
 local WeaponTypes = require(script.Parent.WeaponTypes)
 
 return {
     [WeaponTypes.AssaultRifle] = {
-        name = "Assault Rifle",
+        name = "Rifle",
+        slot = 1,
+        kind = "Firearm",
         damage = 25,
-        fireRate = 600, -- RPM
+        fireRate = 600,
         magazineSize = 30,
         reloadTime = 2.0,
-        spread = 0.05,
-        range = 100,
+        range = 300,
+        soundId = "rbxasset://sounds/electronicpingshort.wav",
+    },
+    [WeaponTypes.Pistol] = {
+        name = "Pistol",
+        slot = 2,
+        kind = "Firearm",
+        damage = 18,
+        fireRate = 300,
+        magazineSize = 12,
+        reloadTime = 1.45,
+        range = 220,
+        soundId = "rbxasset://sounds/electronicpingshort.wav",
+    },
+    [WeaponTypes.Knife] = {
+        name = "Knife",
+        slot = 3,
+        kind = "Melee",
+        damage = 35,
+        fireRate = 90,
+        range = 7,
+        soundId = "rbxasset://sounds/swordslash.wav",
+    },
+    [WeaponTypes.Fists] = {
+        name = "Fists",
+        slot = 3,
+        kind = "Melee",
+        damage = 18,
+        fireRate = 120,
+        range = 6,
+        soundId = "rbxasset://sounds/switch.wav",
+    },
+    [WeaponTypes.Grenade] = {
+        name = "Grenade",
+        slot = 4,
+        kind = "Utility",
+        damage = 65,
+        fireRate = 30,
+        range = 70,
+        radius = 12,
+        cooldown = 5,
+        soundId = "rbxasset://sounds/impact_water.mp3",
     },
 }

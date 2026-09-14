@@ -21,3 +21,15 @@ Real-phone PASS requires owner/human evidence; device emulation is not a substit
 Stage 1 is mobile-first: complete the mobile implementation and real-phone Human Gate before
 starting desktop compatibility. Mobile and desktop camera/input controllers must never own the
 same input path simultaneously.
+
+
+## Mobile v13 combat expansion — implementation gate
+
+- v12 real-phone movement, camera swipe, jump and center aim remain the protected baseline.
+- Mobile v13 adds original touch controls: FIRE, contextual reload, and four loadout slots.
+- Slot order is primary rifle, pistol, knife (fists fallback), grenade.
+- The reload control shows disabled, available, and reloading states and cannot fire during reload.
+- A server-authoritative primitive ABYSS MONSTER target takes firearm, melee, and grenade damage and respawns after 3 seconds.
+- Audio uses replaceable Roblox-bundled cue paths only; final licensed production sound design remains future work.
+- PC-specific input/camera source remains deferred until mobile v13 receives Human PASS.
+- Human gate required: camera swipe preservation, no button overlap, both firearm reloads, all four slots, monster hit/death/respawn, and audible cues.

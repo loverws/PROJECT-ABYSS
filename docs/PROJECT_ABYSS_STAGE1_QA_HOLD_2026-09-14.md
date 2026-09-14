@@ -122,3 +122,15 @@ This is an approved architecture proposal only; it has not been installed or act
 9. Preserve the current role rule: the controlling assistant directs and reviews; the selected worker implements.
 
 Official Codex documentation supports ChatGPT-account or API-key authentication, non-interactive `codex exec` for scripted pipelines, and usage inspection. Account owners must complete their own authentication. Automatic fallback must not bypass plan limits or share credentials.
+
+
+## Mobile v13 combat expansion — implementation gate
+
+- v12 real-phone movement, camera swipe, jump and center aim remain the protected baseline.
+- Mobile v13 adds original touch controls: FIRE, contextual reload, and four loadout slots.
+- Slot order is primary rifle, pistol, knife (fists fallback), grenade.
+- The reload control shows disabled, available, and reloading states and cannot fire during reload.
+- A server-authoritative primitive ABYSS MONSTER target takes firearm, melee, and grenade damage and respawns after 3 seconds.
+- Audio uses replaceable Roblox-bundled cue paths only; final licensed production sound design remains future work.
+- PC-specific input/camera source remains deferred until mobile v13 receives Human PASS.
+- Human gate required: camera swipe preservation, no button overlap, both firearm reloads, all four slots, monster hit/death/respawn, and audible cues.

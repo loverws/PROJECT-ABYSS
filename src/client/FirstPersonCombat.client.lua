@@ -374,13 +374,24 @@ end
 
 -- Set up viewmodel visibility based on equipped state
 local function setViewModelVisibility()
-    local transparency = clientWeaponSystem.equipped and 0 or 1
+    local weaponType = clientWeaponSystem.weaponType or "AssaultRifle"
+    local visibleNames = if weaponType == "Pistol"
+        then { Receiver = true, Barrel = true, PistolGrip = true }
+        elseif weaponType == "Knife" or weaponType == "Fists" then {
+            Barrel = true,
+            Handguard = weaponType == "Fists",
+        }
+        elseif weaponType == "Grenade" then { Magazine = true }
+        else nil
     for _, part in ipairs(viewModelParts) do
-        if part.Name == "Muzzle" then
-            -- Muzzle must remain at transparency 1
-            part.LocalTransparencyModifier = 1
-        else
-            part.LocalTransparencyModifier = transparency
+        local visible = clientWeaponSystem.equipped
+            and part.Name ~= "Muzzle"
+            and (visibleNames == nil or visibleNames[part.Name] == true)
+        part.LocalTransparencyModifier = visible and 0 or 1
+        if weaponType == "Knife" and part.Name == "Barrel" then
+            part.Color = Color3.fromRGB(215, 225, 235)
+        elseif weaponType == "Grenade" and part.Name == "Magazine" then
+            part.Color = Color3.fromRGB(70, 95, 65)
         end
     end
 end
@@ -392,6 +403,10 @@ clientWeaponSystem.SetEquippedChanged = function()
     if not isTouchDevice then
         UserInputService.MouseIconEnabled = not clientWeaponSystem.equipped
     end
+end
+
+clientWeaponSystem.ViewModelUpdated = function()
+    setViewModelVisibility()
 end
 
 -- Setup viewmodel as camera child

@@ -30,7 +30,6 @@ def check_mobile_input_controller():
 		"FireServer",
 		"SetAim",
 		"damage",
-		"ammo",
 		"target lock",
 		"target selection",
 		"FindPartOnRay",
