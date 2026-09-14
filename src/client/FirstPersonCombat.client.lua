@@ -72,25 +72,25 @@ end
 -- Compact AR parts
 local receiver = createViewModelPart(
     "Receiver",
-    Vector3.new(1.2, 0.4, 0.6),
+    Vector3.new(0.85, 0.32, 0.58),
     Color3.fromRGB(50, 50, 50),
     Enum.Material.SmoothPlastic
 )
 local upperReceiver = createViewModelPart(
     "UpperReceiver",
-    Vector3.new(1.2, 0.4, 0.6),
+    Vector3.new(0.82, 0.18, 0.55),
     Color3.fromRGB(50, 50, 50),
     Enum.Material.SmoothPlastic
 )
 local handguard = createViewModelPart(
     "Handguard",
-    Vector3.new(0.8, 0.4, 1.2),
-    Color3.fromRGB(200, 100, 50),
+    Vector3.new(0.58, 0.3, 0.9),
+    Color3.fromRGB(225, 105, 35),
     Enum.Material.SmoothPlastic
 )
 local barrel = createViewModelPart(
     "Barrel",
-    Vector3.new(0.2, 0.2, 1.5),
+    Vector3.new(0.14, 0.14, 1.0),
     Color3.fromRGB(100, 100, 100),
     Enum.Material.SmoothPlastic
 )
@@ -102,7 +102,7 @@ local muzzleDevice = createViewModelPart(
 )
 local stock = createViewModelPart(
     "Stock",
-    Vector3.new(0.4, 0.6, 0.8),
+    Vector3.new(0.38, 0.42, 0.62),
     Color3.fromRGB(30, 30, 30),
     Enum.Material.SmoothPlastic
 )
@@ -114,7 +114,7 @@ local pistolGrip = createViewModelPart(
 )
 local magazine = createViewModelPart(
     "Magazine",
-    Vector3.new(0.2, 0.5, 0.8),
+    Vector3.new(0.22, 0.52, 0.36),
     Color3.fromRGB(60, 60, 60),
     Enum.Material.SmoothPlastic
 )
@@ -153,7 +153,7 @@ local viewModelParts = {
 }
 
 -- Set base offset
-local baseOffset = CFrame.new(0.72, -0.78, -1.55)
+local baseOffset = CFrame.new(0.78, -0.82, -1.9)
 
 -- Record distinct offsets for each part as records with baseOffset applied
 local viewModelRecords = {
@@ -162,7 +162,7 @@ local viewModelRecords = {
     { part = handguard, offset = baseOffset * CFrame.new(0, 0, -0.6) },
     { part = barrel, offset = baseOffset * CFrame.new(0, 0, -1.2) },
     { part = muzzleDevice, offset = baseOffset * CFrame.new(0, 0, -1.7) },
-    { part = stock, offset = baseOffset * CFrame.new(0, 0, 1.2) },
+    { part = stock, offset = baseOffset * CFrame.new(0, 0, 0.42) },
     {
         part = pistolGrip,
         offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, -0.3),
