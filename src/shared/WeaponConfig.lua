@@ -11,7 +11,6 @@ return {
         magazineSize = 30,
         reloadTime = 2.0,
         range = 300,
-        soundId = "rbxasset://sounds/electronicpingshort.wav",
     },
     [WeaponTypes.Pistol] = {
         name = "Pistol",
@@ -22,7 +21,6 @@ return {
         magazineSize = 12,
         reloadTime = 1.45,
         range = 220,
-        soundId = "rbxasset://sounds/electronicpingshort.wav",
     },
     [WeaponTypes.Knife] = {
         name = "Knife",
@@ -31,7 +29,6 @@ return {
         damage = 35,
         fireRate = 90,
         range = 7,
-        soundId = "rbxasset://sounds/swordslash.wav",
     },
     [WeaponTypes.Fists] = {
         name = "Fists",
@@ -40,7 +37,6 @@ return {
         damage = 18,
         fireRate = 120,
         range = 6,
-        soundId = "rbxasset://sounds/switch.wav",
     },
     [WeaponTypes.Grenade] = {
         name = "Grenade",
@@ -52,6 +48,5 @@ return {
         radius = 12,
         cooldown = 5,
         fuseTime = 1.8,
-        soundId = "rbxasset://sounds/switch.wav",
     },
 }

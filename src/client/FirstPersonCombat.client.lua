@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
 
 local player = Players.LocalPlayer
 local isTouchDevice = UserInputService.TouchEnabled
@@ -151,7 +152,9 @@ local function update(deltaTime)
         end
     end
     clientWeaponSystem:UpdateGrenadePreview()
-    viewModel:Update(camera.CFrame)
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    viewModel:Update(camera.CFrame, deltaTime, humanoid and humanoid.MoveDirection.Magnitude or 0)
 end
 
 clientWeaponSystem.AmmoUpdated = function(ammo)
@@ -191,11 +194,61 @@ clientWeaponSystem.GetMuzzleCFrame = function()
     return camera and viewModel:GetMuzzleCFrame(camera.CFrame) or CFrame.identity
 end
 
-clientWeaponSystem.HitConfirmed = function()
-    crosshair.TextColor3 = Color3.fromRGB(255, 75, 75)
+local feedbackParts = {}
+clientWeaponSystem.HitConfirmed = function(payload)
+    local critical = payload.critical == true
+    crosshair.Text = critical and "✦" or "+"
+    crosshair.TextColor3 = critical and Color3.fromRGB(255, 218, 72) or Color3.fromRGB(255, 75, 75)
+    if typeof(payload.hitPosition) == "Vector3" and typeof(payload.damage) == "number" then
+        while #feedbackParts >= 8 do
+            feedbackParts[1]:Destroy()
+            table.remove(feedbackParts, 1)
+        end
+        local anchor = Instance.new("Part")
+        anchor.Name, anchor.Size, anchor.Position =
+            "DamageFeedback", Vector3.new(0.05, 0.05, 0.05), payload.hitPosition
+        anchor.Anchored, anchor.CanCollide, anchor.CanTouch, anchor.CanQuery, anchor.Transparency =
+            true, false, false, false, 1
+        anchor.Parent = Workspace
+        local billboard = Instance.new("BillboardGui")
+        billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop =
+            UDim2.fromOffset(130, 54), Vector3.new(0, 1.8, 0), true
+        billboard.Parent = anchor
+        local text = Instance.new("TextLabel")
+        text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 0.62), 1
+        text.Text = (critical and "CRITICAL " or "")
+            .. tostring(payload.bodyRegion)
+            .. "  -"
+            .. tostring(payload.damage)
+        text.TextColor3, text.TextStrokeTransparency =
+            critical and Color3.fromRGB(255, 218, 72) or Color3.new(1, 1, 1), 0
+        text.Font, text.TextScaled, text.Parent = Enum.Font.GothamBold, true, billboard
+        local barBack = Instance.new("Frame")
+        barBack.Size, barBack.Position = UDim2.fromScale(0.8, 0.18), UDim2.fromScale(0.1, 0.72)
+        barBack.BackgroundColor3, barBack.BorderSizePixel, barBack.Parent =
+            Color3.fromRGB(35, 38, 45), 0, billboard
+        local bar = Instance.new("Frame")
+        local ratio = math.clamp(
+            (payload.targetHealth or 0) / math.max(payload.targetMaxHealth or 1, 1),
+            0,
+            1
+        )
+        bar.Size, bar.BackgroundColor3, bar.BorderSizePixel, bar.Parent =
+            UDim2.fromScale(ratio, 1), Color3.fromRGB(235, 69, 69), 0, barBack
+        table.insert(feedbackParts, anchor)
+        Debris:AddItem(anchor, critical and 0.8 or 0.55)
+    end
     task.delay(0.1, function()
+        crosshair.Text = "+"
         crosshair.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
+end
+
+clientWeaponSystem.ReloadStarted = function(_, duration)
+    viewModel:PlayReload(duration)
+end
+clientWeaponSystem.ReloadFinished = function()
+    viewModel.animation.Value = CFrame.identity
 end
 
 player.CameraMode = Enum.CameraMode.LockFirstPerson

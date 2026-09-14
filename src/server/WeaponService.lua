@@ -8,6 +8,8 @@ local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local WeaponAuthority = require(Shared.WeaponAuthority)
 local GrenadeBallistics = require(Shared.GrenadeBallistics)
+local DamageRegions = require(Shared.DamageRegions)
+local SoundProfiles = require(Shared.SoundProfiles)
 
 local FireEvent = ReplicatedStorage:FindFirstChild("FireWeapon") or Instance.new("RemoteEvent")
 FireEvent.Name = "FireWeapon"
@@ -18,25 +20,33 @@ ReloadEvent.Parent = ReplicatedStorage
 
 local WeaponService = {}
 
+local function playProfile(parent, profileName)
+    local profile = SoundProfiles[profileName]
+    if not profile then
+        return
+    end
+    for index, layer in ipairs(profile.layers) do
+        local sound = Instance.new("Sound")
+        sound.Name = profileName .. "Layer" .. index
+        sound.SoundId = layer.id
+        sound.Volume = layer.volume * (1 + (math.random() * 2 - 1) * SoundProfiles.VOLUME_VARIATION)
+        sound.PlaybackSpeed = layer.speed
+            * (1 + (math.random() * 2 - 1) * SoundProfiles.PITCH_VARIATION)
+        sound.RollOffMinDistance, sound.RollOffMaxDistance = 5, profile.rolloff
+        sound.Parent = parent
+        pcall(function()
+            sound:Play()
+        end)
+        Debris:AddItem(sound, 4)
+    end
+end
+
 local function getHumanoidFromPart(part, excludedCharacter)
     local model = part and part:FindFirstAncestorOfClass("Model")
     if model and model ~= excludedCharacter then
         return model:FindFirstChildOfClass("Humanoid"), model
     end
     return nil, nil
-end
-
-local function safeSound(parent, name, soundId, volume)
-    local sound = Instance.new("Sound")
-    sound.Name = name
-    sound.SoundId = soundId
-    sound.Volume = volume
-    sound.RollOffMaxDistance = 100
-    sound.Parent = parent
-    pcall(function()
-        sound:Play()
-    end)
-    Debris:AddItem(sound, 4)
 end
 
 -- Thrower self-damage is intentionally disabled during the mobile training milestone.
@@ -67,14 +77,37 @@ local function sweptMelee(character, root, direction, config)
     local start = root.Position + Vector3.new(0, 1.4, 0)
     local cast = Workspace:Spherecast(start, 1.15, direction * config.range, params)
     if not cast then
-        return nil, start + direction * config.range
+        return nil, nil, nil, start + direction * config.range
     end
-    local humanoid = getHumanoidFromPart(cast.Instance, character)
+    local humanoid, model = getHumanoidFromPart(cast.Instance, character)
     if humanoid and humanoid.Health > 0 then
-        humanoid:TakeDamage(config.damage)
-        return humanoid, cast.Position
+        local damage, region, multiplier =
+            DamageRegions.Calculate(config.damage, cast.Instance.Name)
+        humanoid:TakeDamage(damage)
+        return humanoid,
+            model,
+            { damage = damage, region = region, multiplier = multiplier },
+            cast.Position
     end
-    return nil, cast.Position
+    return nil, nil, nil, cast.Position
+end
+
+local function reactToHit(model, tier)
+    if not model then
+        return
+    end
+    local now = Workspace:GetServerTimeNow()
+    local profileName = (tier == "Critical" or tier == "Strong") and "VocalStrong" or "VocalNormal"
+    local profile = SoundProfiles[profileName]
+    local lastVocal = model:GetAttribute("LastVocalTime") or -math.huge
+    if now - lastVocal < profile.cooldown then
+        return
+    end
+    model:SetAttribute("LastVocalTime", now)
+    local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+    if root then
+        playProfile(root, profileName)
+    end
 end
 
 local function createExplosion(position, config, character)
@@ -96,14 +129,14 @@ local function createExplosion(position, config, character)
     explosion.BlastPressure = 0
     explosion.DestroyJointRadiusPercent = 0
     explosion.Parent = Workspace
-    safeSound(flash, "GrenadeExplosion", "rbxasset://sounds/Rocket shot.wav", 0.75)
+    playProfile(flash, "GrenadeExplosion")
     flash.Size = Vector3.new(config.radius * 1.5, config.radius * 1.5, config.radius * 1.5)
     flash.Transparency = 0.45
     Debris:AddItem(flash, 0.16)
     return damageRadius(position, config.radius, config.damage, character)
 end
 
-local function spawnGrenade(player, character, root, lookDirection, config, charge)
+local function spawnGrenade(player, character, root, lookDirection, config, charge, onExploded)
     local velocity = GrenadeBallistics.GetLaunchVelocity(lookDirection, charge)
     local horizontal = Vector3.new(velocity.X, 0, velocity.Z)
     local forward = horizontal.Magnitude > 0.001 and horizontal.Unit or root.CFrame.LookVector
@@ -129,7 +162,7 @@ local function spawnGrenade(player, character, root, lookDirection, config, char
             return
         end
         bounceReady = false
-        safeSound(grenade, "GrenadeBounce", "rbxasset://sounds/collide.wav", 0.32)
+        playProfile(grenade, "GrenadeBounce")
         task.delay(0.12, function()
             bounceReady = true
         end)
@@ -147,6 +180,9 @@ local function spawnGrenade(player, character, root, lookDirection, config, char
             hitConfirmed = hitAny,
             hitPosition = position,
         })
+        if onExploded then
+            onExploded(hitAny)
+        end
         grenade:Destroy()
     end)
     return grenade, velocity
@@ -234,14 +270,33 @@ function WeaponService:HandleFireRequest(player, payload)
     local direction = payload.direction.Unit
     local hitPosition = payload.origin + direction * config.range
     local hitConfirmed = false
+    local hitFeedback = nil
+    local targetModel = nil
     if config.kind == "Utility" then
-        local _, launchVelocity =
-            spawnGrenade(player, character, root, direction, config, payload.throwCharge)
+        local _, launchVelocity = spawnGrenade(
+            player,
+            character,
+            root,
+            direction,
+            config,
+            payload.throwCharge,
+            function(explosionHit)
+                if self.ActionResolved then
+                    self.ActionResolved(player, {
+                        weaponType = WeaponTypes.Grenade,
+                        hitConfirmed = explosionHit,
+                        exploded = true,
+                    })
+                end
+            end
+        )
         hitPosition = root.Position + launchVelocity * 0.1
     elseif config.kind == "Melee" then
-        local humanoid
-        humanoid, hitPosition = sweptMelee(character, root, direction, config)
+        local humanoid, feedback
+        humanoid, targetModel, feedback, hitPosition =
+            sweptMelee(character, root, direction, config)
         hitConfirmed = humanoid ~= nil
+        hitFeedback = feedback
     else
         local params = RaycastParams.new()
         params.FilterType = Enum.RaycastFilterType.Exclude
@@ -249,12 +304,25 @@ function WeaponService:HandleFireRequest(player, payload)
         local cast = Workspace:Raycast(payload.origin, direction * config.range, params)
         if cast then
             hitPosition = cast.Position
-            local humanoid = getHumanoidFromPart(cast.Instance, character)
+            local humanoid, model = getHumanoidFromPart(cast.Instance, character)
             if humanoid and humanoid.Health > 0 then
-                humanoid:TakeDamage(config.damage)
+                local damage, region, multiplier =
+                    DamageRegions.Calculate(config.damage, cast.Instance.Name)
+                humanoid:TakeDamage(damage)
                 hitConfirmed = true
+                targetModel = model
+                hitFeedback = { damage = damage, region = region, multiplier = multiplier }
             end
         end
+    end
+
+    if hitFeedback then
+        hitFeedback.tier = DamageRegions.GetTier(hitFeedback.region, hitFeedback.damage)
+        hitFeedback.critical = hitFeedback.tier == "Critical"
+        local humanoid = targetModel and targetModel:FindFirstChildOfClass("Humanoid")
+        hitFeedback.targetHealth = humanoid and humanoid.Health or 0
+        hitFeedback.targetMaxHealth = humanoid and humanoid.MaxHealth or 0
+        reactToHit(targetModel, hitFeedback.tier)
     end
 
     FireEvent:FireClient(player, {
@@ -265,7 +333,22 @@ function WeaponService:HandleFireRequest(player, payload)
         ammo = data.ammo[weaponType],
         hitPosition = hitPosition,
         hitConfirmed = hitConfirmed,
+        damage = hitFeedback and hitFeedback.damage,
+        bodyRegion = hitFeedback and hitFeedback.region,
+        damageTier = hitFeedback and hitFeedback.tier,
+        critical = hitFeedback and hitFeedback.critical,
+        targetHealth = hitFeedback and hitFeedback.targetHealth,
+        targetMaxHealth = hitFeedback and hitFeedback.targetMaxHealth,
     })
+    if self.ActionResolved then
+        self.ActionResolved(player, {
+            weaponType = weaponType,
+            hitConfirmed = hitConfirmed,
+            targetModel = targetModel,
+            damage = hitFeedback and hitFeedback.damage,
+            bodyRegion = hitFeedback and hitFeedback.region,
+        })
+    end
     if config.kind == "Firearm" then
         for otherPlayer in pairs(self.players) do
             if otherPlayer ~= player then

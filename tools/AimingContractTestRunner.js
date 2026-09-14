@@ -25,7 +25,7 @@ for (const x of [-20,0,20]) {
   void x;
   assert(look.every((n,i) => n === look[i]), "strafe changed aim direction");
 }
-assert(!client.split("function ClientWeaponSystem:GetCenterAim",2)[1].split("function ClientWeaponSystem:PlaySoundId",1)[0].includes("HumanoidRootPart"), "movement-derived aim");
+assert(!client.split("function ClientWeaponSystem:GetCenterAim",2)[1].split("function ClientWeaponSystem:PlayProfile",1)[0].includes("HumanoidRootPart"), "movement-derived aim");
 console.log("PASS: A/D translation preserves camera-owned aim direction");
 
 for (const token of ["WeaponAuthority.CanFire", "humanoid:TakeDamage", "Workspace:Raycast(payload.origin", "presentationOrigin = root.Position"])

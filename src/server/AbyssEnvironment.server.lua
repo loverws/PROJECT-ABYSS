@@ -1,5 +1,6 @@
 -- Original bright, open-sky training range for the unfinished mobile v13 milestone.
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local old = Workspace:FindFirstChild("AbyssTrainingRange")
@@ -168,3 +169,59 @@ for _, x in ipairs({ -25, 25 }) do
         part("LanePillar", Vector3.new(3, 16, 3), CFrame.new(x, 8, z), WHITE, true)
     end
 end
+
+-- Color-coded tutorial zones and moving-target rails stay outside the center reticle corridor.
+for index, zone in ipairs({
+    { z = 48, color = Color3.fromRGB(90, 205, 135) },
+    { z = 5, color = BLUE },
+    { z = -48, color = ORANGE },
+    { z = -98, color = Color3.fromRGB(155, 95, 220) },
+}) do
+    local strip = part(
+        "TutorialZone" .. index,
+        Vector3.new(5, 0.06, 34),
+        CFrame.new(-29, 0.08, zone.z),
+        zone.color,
+        false
+    )
+    strip.Material, strip.Transparency = Enum.Material.Neon, 0.35
+end
+part("MovingTargetRail", Vector3.new(22, 0.28, 0.35), CFrame.new(0, 1.1, -18), DARK, false)
+
+local animated = {}
+for index, z in ipairs({ 34, -34, -102 }) do
+    local hub = part(
+        "FanHub" .. index,
+        Vector3.new(0.7, 0.7, 0.7),
+        CFrame.new(index % 2 == 0 and 47 or -47, 8, z),
+        DARK,
+        false
+    )
+    hub.Shape = Enum.PartType.Ball
+    local blade = part(
+        "FanBlade" .. index,
+        Vector3.new(0.18, 5, 0.45),
+        hub.CFrame,
+        index % 2 == 0 and BLUE or ORANGE,
+        false
+    )
+    table.insert(animated, { part = blade, base = hub.CFrame, speed = 0.7 + index * 0.12 })
+    local light = Instance.new("PointLight")
+    light.Color, light.Brightness, light.Range, light.Parent = blade.Color, 0.8, 12, hub
+end
+
+local ambience = Instance.new("Sound")
+ambience.Name, ambience.SoundId = "TrainingAmbience", "rbxasset://sounds/bass.wav"
+ambience.Volume, ambience.PlaybackSpeed, ambience.Looped = 0.025, 0.45, true
+ambience.RollOffMaxDistance, ambience.Parent = 180, range
+pcall(function()
+    ambience:Play()
+end)
+
+local animationTime = 0
+RunService.Heartbeat:Connect(function(deltaTime)
+    animationTime += deltaTime
+    for _, item in ipairs(animated) do
+        item.part.CFrame = item.base * CFrame.Angles(0, 0, animationTime * item.speed)
+    end
+end)

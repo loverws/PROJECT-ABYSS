@@ -19,7 +19,7 @@ for (const token of ["[1] = WeaponTypes.AssaultRifle", "[2] = WeaponTypes.Pistol
 assert(!slotBlock.includes("WeaponTypes.Knife"), "knife replaced default fists slot");
 for (const token of ["addFist(records, model, \"Left\"", "addFist(records, model, \"Right\"", 'side .. "Glove"', 'side .. "Knuckle"', "KnifeBlade", "PlayAttack", 'name == "Fists"', 'name == "Knife"'])
   assert(viewmodel.includes(token), "3D melee viewmodel/action missing: " + token);
-assert(client.includes("HitConfirmed") && camera.includes("crosshair.TextColor3 = Color3.fromRGB(255, 75, 75)"), "hit feedback missing");
+assert(client.includes("HitConfirmed") && camera.includes("DamageFeedback") && camera.includes("Color3.fromRGB(255, 75, 75)"), "hit feedback missing");
 console.log("PASS: slot order, visible fists, retained 3D knife, attacks, and hit feedback are wired");
 
 for (const token of ["BASE_UPWARD_SPEED = 46", "horizontal * speed + Vector3.new(0", "SamplePosition", "-0.5 * GrenadeBallistics.GRAVITY"])

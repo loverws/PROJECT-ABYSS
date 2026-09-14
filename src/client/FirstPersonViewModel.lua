@@ -285,8 +285,10 @@ end
 
 function FirstPersonViewModel.new()
     local self = setmetatable({}, FirstPersonViewModel)
-    self.animation, self.punch = Instance.new("CFrameValue"), Instance.new("NumberValue")
+    self.animation, self.punch, self.equip =
+        Instance.new("CFrameValue"), Instance.new("NumberValue"), Instance.new("NumberValue")
     self.models, self.current, self.punchSide = {}, "AssaultRifle", "Left"
+    self.time = 0
     for name, builder in pairs({
         AssaultRifle = buildRifle,
         Pistol = buildPistol,
@@ -312,21 +314,31 @@ function FirstPersonViewModel:SetCamera(camera)
 end
 
 function FirstPersonViewModel:SetWeapon(name)
-    self.current, self.animation.Value, self.punch.Value =
-        self.models[name] and name or "Fists", CFrame.identity, 0
+    self.current, self.animation.Value, self.punch.Value, self.equip.Value =
+        self.models[name] and name or "Fists", CFrame.identity, 0, 0
     for weaponName, data in pairs(self.models) do
         for _, record in ipairs(data.records) do
             record.part.LocalTransparencyModifier = weaponName == self.current and 0 or 1
         end
     end
+    TweenService:Create(self.equip, TweenInfo.new(0.18, Enum.EasingStyle.Quad), { Value = 1 })
+        :Play()
 end
 
-function FirstPersonViewModel:Update(cameraCFrame)
+function FirstPersonViewModel:Update(cameraCFrame, deltaTime, moveAmount)
     local data = self.models[self.current]
     if not data then
         return
     end
-    local root = cameraCFrame * data.base * self.animation.Value
+    self.time += deltaTime or 0
+    local move = math.clamp(moveAmount or 0, 0, 1)
+    local breathe = math.sin(self.time * 1.6) * 0.012
+    local bobX = math.sin(self.time * 8) * 0.018 * move
+    local bobY = math.abs(math.cos(self.time * 8)) * 0.014 * move
+    local equipOffset = (1 - self.equip.Value) * 0.22
+    local procedural = CFrame.new(bobX, breathe - bobY - equipOffset, 0)
+        * CFrame.Angles(breathe * 0.25, 0, bobX * 0.18)
+    local root = cameraCFrame * data.base * procedural * self.animation.Value
     for _, record in ipairs(data.records) do
         local pose = CFrame.identity
         if self.current == "Fists" and record.part.Name:find(self.punchSide) == 1 then
@@ -334,6 +346,16 @@ function FirstPersonViewModel:Update(cameraCFrame)
         end
         record.part.CFrame = root * pose * record.offset
     end
+end
+
+function FirstPersonViewModel:PlayReload(duration)
+    local down = CFrame.new(0.08, -0.18, 0.12) * CFrame.Angles(math.rad(12), 0, math.rad(8))
+    TweenService
+        :Create(self.animation, TweenInfo.new(math.min(duration * 0.2, 0.25)), { Value = down })
+        :Play()
+    task.delay(math.max(0.1, duration - 0.22), function()
+        TweenService:Create(self.animation, TweenInfo.new(0.2), { Value = CFrame.identity }):Play()
+    end)
 end
 
 function FirstPersonViewModel:PlayAttack(name)
@@ -355,12 +377,26 @@ function FirstPersonViewModel:PlayAttack(name)
         end)
         return
     end
-    local target = name == "Knife"
-            and CFrame.new(-0.18, 0.1, -0.42) * CFrame.Angles(
-                math.rad(-12),
-                math.rad(-16),
-                math.rad(-55)
-            )
+    if name == "Knife" then
+        local windup = CFrame.new(0.12, -0.05, 0.16) * CFrame.Angles(0, math.rad(12), math.rad(18))
+        local contact = CFrame.new(-0.18, 0.1, -0.42)
+            * CFrame.Angles(math.rad(-12), math.rad(-16), math.rad(-55))
+        local windupTween =
+            TweenService:Create(self.animation, TweenInfo.new(0.09), { Value = windup })
+        windupTween:Play()
+        windupTween.Completed:Once(function()
+            local contactTween =
+                TweenService:Create(self.animation, TweenInfo.new(0.07), { Value = contact })
+            contactTween:Play()
+            contactTween.Completed:Once(function()
+                TweenService
+                    :Create(self.animation, TweenInfo.new(0.13), { Value = CFrame.identity })
+                    :Play()
+            end)
+        end)
+        return
+    end
+    local target = name == "Knife" and CFrame.identity
         or name == "Grenade" and CFrame.new(-0.08, 0.34, -0.2) * CFrame.Angles(math.rad(-38), 0, 0)
         or CFrame.new(0, 0.02, 0.08) * CFrame.Angles(math.rad(2), 0, 0)
     local out = TweenService:Create(

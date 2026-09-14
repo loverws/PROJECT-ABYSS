@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local GrenadeBallistics = require(Shared.GrenadeBallistics)
+local SoundProfiles = require(Shared.SoundProfiles)
 
 local FireEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ReloadEvent = ReplicatedStorage:WaitForChild("ReloadWeapon")
@@ -98,22 +99,23 @@ function ClientWeaponSystem:GetCenterAim(camera, character)
     return centerRay.Origin, shotDirection, aimPoint, result
 end
 
-function ClientWeaponSystem:PlaySoundId(name, soundId, volume)
-    if not soundId or soundId == "" then
+function ClientWeaponSystem:PlayProfile(profileName, parent)
+    local profile = SoundProfiles[profileName]
+    if not profile then
         return
     end
-    local sound = Instance.new("Sound")
-    sound.Name = name
-    sound.SoundId = soundId
-    sound.Volume = volume or 0.45
-    sound.RollOffMaxDistance = 90
-    sound.Parent = Workspace.CurrentCamera or Workspace
-    sound:Play()
-    Debris:AddItem(sound, 4)
-end
-
-function ClientWeaponSystem:PlayCue(config)
-    self:PlaySoundId(config.name .. "Cue", config.soundId, config.kind == "Firearm" and 0.45 or 0.5)
+    for index, layer in ipairs(profile.layers) do
+        local sound = Instance.new("Sound")
+        sound.Name = profileName .. "Layer" .. index
+        sound.SoundId = layer.id
+        sound.Volume = layer.volume * (1 + (math.random() * 2 - 1) * SoundProfiles.VOLUME_VARIATION)
+        sound.PlaybackSpeed = layer.speed
+            * (1 + (math.random() * 2 - 1) * SoundProfiles.PITCH_VARIATION)
+        sound.RollOffMinDistance, sound.RollOffMaxDistance = 5, profile.rolloff
+        sound.Parent = parent or Workspace.CurrentCamera or Workspace
+        sound:Play()
+        Debris:AddItem(sound, 4)
+    end
 end
 
 function ClientWeaponSystem:CreateTracer(origin, endpoint, weaponType)
@@ -218,7 +220,7 @@ function ClientWeaponSystem:SendAttack(charge)
     if self.ActionStarted then
         self.ActionStarted(self.weaponType)
     end
-    self:PlayCue(config)
+    self:PlayProfile(self.weaponType)
     self:NotifyState()
     FireEvent:FireServer({
         weaponType = self.weaponType,
@@ -287,9 +289,9 @@ function ClientWeaponSystem:HandleServerResponse(payload)
         self.ammoByWeapon[payload.weaponType] = payload.ammo
     end
     if payload.hitConfirmed then
-        self:PlaySoundId("HitConfirm", "rbxasset://sounds/button.wav", 0.35)
+        self:PlayProfile(payload.critical and "ImpactCritical" or "ImpactNormal")
         if self.HitConfirmed then
-            self.HitConfirmed(payload.hitPosition)
+            self.HitConfirmed(payload)
         end
     end
     self:NotifyState()
@@ -303,6 +305,9 @@ function ClientWeaponSystem:Reload()
         return false
     end
     self.reloading = true
+    if self.ReloadStarted then
+        self.ReloadStarted(self.weaponType, config.reloadTime)
+    end
     self:NotifyState()
     ReloadEvent:FireServer(self.weaponType)
     return true
@@ -313,11 +318,14 @@ function ClientWeaponSystem:HandleReloadResponse(payload)
         return
     end
     self.reloading = false
+    if self.ReloadFinished then
+        self.ReloadFinished(payload.weaponType)
+    end
     if payload.weaponType and typeof(payload.ammo) == "number" then
         self.ammoByWeapon[payload.weaponType] = payload.ammo
     end
     if payload.accepted then
-        self:PlaySoundId("Reload", "rbxasset://sounds/switch.wav", 0.4)
+        self:PlayProfile("Reload")
     end
     self:NotifyState()
 end

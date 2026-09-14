@@ -1,5 +1,13 @@
 # PROJECT ABYSS Current Status
 
+## Unfinished v13 tutorial-range rework (2026-09-15)
+
+Implementation now includes server-derived body-region damage/feedback, distinct replaceable
+layered sound profiles, five server-gated tutorial stages, moving targets, a bounded novice bot,
+range ambience, and procedural viewmodel motion. Machine verification and Rojo build are required
+before checkpoint; Studio mobile-emulation and real-phone Human Gate remain separate and cannot be
+inferred from static evidence.
+
 Updated: 2026-09-10
 Execution: WORK REMOTE READY
 Branch: main

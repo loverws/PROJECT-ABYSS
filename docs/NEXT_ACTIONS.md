@@ -1,5 +1,12 @@
 # PROJECT ABYSS Next Actions
 
+## Unfinished v13 tutorial-range QA
+
+1. Run all deterministic authority, aiming, camera, mobile-layout, tutorial, audio, and build checks.
+2. Capture Studio mobile-emulation evidence for all five tutorial stages and body-region feedback.
+3. Director reviews visual/audio quality and returns bounded v13 rework items if needed.
+4. Only after Director readiness may the owner perform the real-phone Human Gate.
+
 Updated: 2026-09-10
 
 1. Orchestrator P0 safeguards. [COMPLETE]
