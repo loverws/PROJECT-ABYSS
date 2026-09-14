@@ -39,6 +39,20 @@ ammoLabel.Text = "30"
 
 ammoLabel.Parent = screenGui
 
+-- Add ControlsHint
+local controlsHint = Instance.new("TextLabel")
+controlsHint.Name = "ControlsHint"
+controlsHint.Size = UDim2.fromOffset(300, 40)
+controlsHint.Position = UDim2.fromScale(0.5, 1.0)
+controlsHint.AnchorPoint = Vector2.new(0.5, 1.0)
+controlsHint.BackgroundTransparency = 0.5
+controlsHint.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+controlsHint.TextColor3 = Color3.fromRGB(255, 255, 255)
+controlsHint.TextScaled = true
+controlsHint.Font = Enum.Font.SourceSansBold
+controlsHint.Text = "WASD MOVE | SPACE JUMP | LMB FIRE | R RELOAD"
+controlsHint.Parent = screenGui
+
 -- Create viewmodel parts
 local function createViewModelPart(name, size, color, material)
     local part = Instance.new("Part")
@@ -103,6 +117,8 @@ local sightOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -1.0)
 -- Recoil state
 local recoilPitch = 0
 local recoilYaw = 0
+local appliedRecoilPitch = 0
+local appliedRecoilYaw = 0
 local shotCount = 0
 local activeProfile = nil
 
@@ -123,8 +139,16 @@ local function updateViewModel(deltaTime)
 
     -- Apply recoil effect
     if activeProfile then
-        camera.CFrame = camera.CFrame * CFrame.Angles(recoilPitch, recoilYaw, 0)
+        local pitchDelta = recoilPitch - appliedRecoilPitch
+        local yawDelta = recoilYaw - appliedRecoilYaw
 
+        camera.CFrame = camera.CFrame * CFrame.Angles(pitchDelta, yawDelta, 0)
+
+        -- Update applied recoil
+        appliedRecoilPitch = recoilPitch
+        appliedRecoilYaw = recoilYaw
+
+        -- Recover recoil toward zero
         local recoveryAmount = activeProfile.recoverySpeed * deltaTime
 
         recoilPitch = math.max(0, recoilPitch - recoveryAmount)
@@ -135,9 +159,12 @@ local function updateViewModel(deltaTime)
             recoilYaw = math.min(0, recoilYaw + recoveryAmount)
         end
 
-        if recoilPitch <= 0.001 and math.abs(recoilYaw) <= 0.001 then
+        -- Snap to zero when close enough
+        if math.abs(recoilPitch) <= 0.001 and math.abs(recoilYaw) <= 0.001 then
             recoilPitch = 0
             recoilYaw = 0
+            appliedRecoilPitch = 0
+            appliedRecoilYaw = 0
             shotCount = 0
             activeProfile = nil
         end
