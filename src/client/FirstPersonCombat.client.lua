@@ -181,8 +181,10 @@ local recoilPitch = 0
 local recoilYaw = 0
 local shotCount = 0
 local activeProfile = nil
-local appliedRecoilPitch = 0
-local appliedRecoilYaw = 0
+local neutralPitch = nil
+local neutralYaw = nil
+local lastOutputPitch = nil
+local lastOutputYaw = nil
 
 local MIN_LOOK_MAGNITUDE = 0.000001
 local MAX_CAMERA_PITCH = math.rad(85)
@@ -217,8 +219,14 @@ local function resetRecoil()
     recoilYaw = 0
     shotCount = 0
     activeProfile = nil
-    appliedRecoilPitch = 0
-    appliedRecoilYaw = 0
+end
+
+local function resetCameraTracking()
+    resetRecoil()
+    neutralPitch = nil
+    neutralYaw = nil
+    lastOutputPitch = nil
+    lastOutputYaw = nil
 end
 
 -- Update viewmodel position and recoil on RenderStepped
@@ -228,66 +236,75 @@ local function updateViewModel(deltaTime)
         return
     end
 
-    if activeProfile or appliedRecoilPitch ~= 0 or appliedRecoilYaw ~= 0 then
-        local cameraCFrame = camera.CFrame
-        local cameraPosition = cameraCFrame.Position
-        local displayedYaw, displayedPitch = getYawPitch(cameraCFrame.LookVector)
+    local cameraCFrame = camera.CFrame
+    local cameraPosition = cameraCFrame.Position
+    local displayedYaw, displayedPitch = getYawPitch(cameraCFrame.LookVector)
+    if not displayedYaw or not displayedPitch then
+        resetCameraTracking()
+        return
+    end
 
-        if not displayedYaw or not displayedPitch then
-            resetRecoil()
-            return
-        end
-
-        -- Roblox camera processing starts from the CFrame written on the previous frame. Remove
-        -- exactly that output before applying the current recoil state so recoil cannot feed back
-        -- into its own neutral basis. Mouse/controller yaw and pitch changes remain in the basis.
-        local neutralYaw = normalizeAngle(displayedYaw - appliedRecoilYaw)
-        local neutralPitch =
-            math.clamp(displayedPitch - appliedRecoilPitch, -MAX_CAMERA_PITCH, MAX_CAMERA_PITCH)
-        local finalYaw = normalizeAngle(neutralYaw + recoilYaw)
-        local finalPitch =
-            math.clamp(neutralPitch + recoilPitch, -MAX_CAMERA_PITCH, MAX_CAMERA_PITCH)
-        local cosPitch = math.cos(finalPitch)
-        local finalLook = Vector3.new(
-            -math.sin(finalYaw) * cosPitch,
-            math.sin(finalPitch),
-            -math.cos(finalYaw) * cosPitch
+    if
+        neutralYaw == nil
+        or neutralPitch == nil
+        or lastOutputYaw == nil
+        or lastOutputPitch == nil
+    then
+        neutralYaw = displayedYaw
+        neutralPitch = displayedPitch
+    else
+        -- The default camera starts with our prior visual output. Its change from that exact output
+        -- is neutral player aim input; recoil remains an output-only offset and cannot feed back.
+        neutralYaw = normalizeAngle(neutralYaw + normalizeAngle(displayedYaw - lastOutputYaw))
+        neutralPitch = math.clamp(
+            neutralPitch + displayedPitch - lastOutputPitch,
+            -MAX_CAMERA_PITCH,
+            MAX_CAMERA_PITCH
         )
+    end
 
-        if
-            isFinite(finalLook.X)
-            and isFinite(finalLook.Y)
-            and isFinite(finalLook.Z)
-            and finalLook.Magnitude >= MIN_LOOK_MAGNITUDE
-        then
-            camera.CFrame = CFrame.lookAt(cameraPosition, cameraPosition + finalLook, Vector3.yAxis)
-            appliedRecoilPitch = finalPitch - neutralPitch
-            appliedRecoilYaw = normalizeAngle(finalYaw - neutralYaw)
-        else
-            resetRecoil()
-            return
+    local finalYaw = normalizeAngle(neutralYaw + recoilYaw)
+    local finalPitch = math.clamp(neutralPitch + recoilPitch, -MAX_CAMERA_PITCH, MAX_CAMERA_PITCH)
+    local cosPitch = math.cos(finalPitch)
+    local finalLook = Vector3.new(
+        -math.sin(finalYaw) * cosPitch,
+        math.sin(finalPitch),
+        -math.cos(finalYaw) * cosPitch
+    )
+
+    if
+        isFinite(finalLook.X)
+        and isFinite(finalLook.Y)
+        and isFinite(finalLook.Z)
+        and finalLook.Magnitude >= MIN_LOOK_MAGNITUDE
+    then
+        camera.CFrame = CFrame.lookAt(cameraPosition, cameraPosition + finalLook, Vector3.yAxis)
+        lastOutputYaw = finalYaw
+        lastOutputPitch = finalPitch
+    else
+        resetCameraTracking()
+        return
+    end
+
+    if activeProfile then
+        local recoveryAmount = activeProfile.recoverySpeed * deltaTime
+        recoilPitch = math.max(0, recoilPitch - recoveryAmount)
+
+        if recoilYaw > 0 then
+            recoilYaw = math.max(0, recoilYaw - recoveryAmount)
+        elseif recoilYaw < 0 then
+            recoilYaw = math.min(0, recoilYaw + recoveryAmount)
         end
 
-        if activeProfile then
-            local recoveryAmount = activeProfile.recoverySpeed * deltaTime
-            recoilPitch = math.max(0, recoilPitch - recoveryAmount)
-
-            if recoilYaw > 0 then
-                recoilYaw = math.max(0, recoilYaw - recoveryAmount)
-            elseif recoilYaw < 0 then
-                recoilYaw = math.min(0, recoilYaw + recoveryAmount)
-            end
-
-            if math.abs(recoilPitch) <= 0.001 then
-                recoilPitch = 0
-            end
-            if math.abs(recoilYaw) <= 0.001 then
-                recoilYaw = 0
-            end
-            if recoilPitch == 0 and recoilYaw == 0 then
-                shotCount = 0
-                activeProfile = nil
-            end
+        if math.abs(recoilPitch) <= 0.001 then
+            recoilPitch = 0
+        end
+        if math.abs(recoilYaw) <= 0.001 then
+            recoilYaw = 0
+        end
+        if recoilPitch == 0 and recoilYaw == 0 then
+            shotCount = 0
+            activeProfile = nil
         end
     end
 
@@ -377,7 +394,7 @@ setViewModelVisibility()
 
 -- Connect to RenderStepped for updates
 local function onCurrentCameraChanged()
-    resetRecoil()
+    resetCameraTracking()
     local currentCamera = Workspace.CurrentCamera
     if not currentCamera then
         return
@@ -393,6 +410,6 @@ RunService:BindToRenderStep(
     updateViewModel
 )
 Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(onCurrentCameraChanged)
-player.CharacterAdded:Connect(resetRecoil)
+player.CharacterAdded:Connect(resetCameraTracking)
 
 -- Tool auto-equip is intentionally disabled to avoid duplicate Tool.Activated firing.
