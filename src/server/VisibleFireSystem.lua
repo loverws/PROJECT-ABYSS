@@ -1,7 +1,24 @@
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
 local VisibleFireSystem = {}
+
+local function createImpact(position)
+    local impact = Instance.new("Part")
+    impact.Name = "BulletImpact"
+    impact.Shape = Enum.PartType.Ball
+    impact.Size = Vector3.new(0.3, 0.3, 0.3)
+    impact.CFrame = CFrame.new(position)
+    impact.Anchored = true
+    impact.CanCollide = false
+    impact.CanTouch = false
+    impact.CanQuery = false
+    impact.Material = Enum.Material.Neon
+    impact.Color = Color3.fromRGB(255, 155, 70)
+    impact.Parent = Workspace
+    Debris:AddItem(impact, 0.08)
+end
 
 function VisibleFireSystem.CreateTracer(origin, direction, character)
     if direction.Magnitude < 0.001 then
@@ -15,26 +32,50 @@ function VisibleFireSystem.CreateTracer(origin, direction, character)
     local unitDirection = direction.Unit
     local raycastResult = Workspace:Raycast(origin, unitDirection * 300, raycastParams)
     local endpoint = if raycastResult then raycastResult.Position else origin + unitDirection * 300
-    local length = (endpoint - origin).Magnitude
-    if length < 0.01 then
+    local distance = (endpoint - origin).Magnitude
+    if distance < 0.01 then
         return nil
     end
 
-    local midpoint = origin + (endpoint - origin) / 2
-    local tracer = Instance.new("Part")
-    tracer.Name = "FireTracer"
-    tracer.Size = Vector3.new(0.08, 0.08, length)
-    tracer.CFrame = CFrame.lookAt(midpoint, endpoint)
-    tracer.Anchored = true
-    tracer.CanCollide = false
-    tracer.CanQuery = false
-    tracer.Massless = true
-    tracer.Material = Enum.Material.Neon
-    tracer.Color = Color3.fromRGB(255, 225, 64)
-    tracer.Parent = Workspace
+    local startPosition = origin + unitDirection * 0.7
+    local bullet = Instance.new("Part")
+    bullet.Name = "VisualBullet"
+    bullet.Size = Vector3.new(0.12, 0.12, 1.4)
+    bullet.CFrame = CFrame.lookAt(startPosition, startPosition + unitDirection)
+    bullet.Anchored = true
+    bullet.CanCollide = false
+    bullet.CanTouch = false
+    bullet.CanQuery = false
+    bullet.Massless = true
+    bullet.Material = Enum.Material.Neon
+    bullet.Color = Color3.fromRGB(255, 235, 150)
+    bullet.Parent = Workspace
 
-    Debris:AddItem(tracer, 0.15)
-    return tracer
+    local travelTime = math.clamp(distance / 600, 0.03, 0.25)
+    local goalCFrame = CFrame.lookAt(endpoint, endpoint + unitDirection)
+    local tween = TweenService:Create(
+        bullet,
+        TweenInfo.new(travelTime, Enum.EasingStyle.Linear),
+        { CFrame = goalCFrame }
+    )
+
+    local completedConnection
+    completedConnection = tween.Completed:Connect(function()
+        if completedConnection then
+            completedConnection:Disconnect()
+            completedConnection = nil
+        end
+        if bullet.Parent then
+            bullet:Destroy()
+        end
+        if raycastResult then
+            createImpact(endpoint)
+        end
+    end)
+
+    Debris:AddItem(bullet, travelTime + 0.1)
+    tween:Play()
+    return bullet
 end
 
 return VisibleFireSystem
