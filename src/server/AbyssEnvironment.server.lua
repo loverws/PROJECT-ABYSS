@@ -210,27 +210,6 @@ makePart(
     true
 )
 
--- Create a clear spawn area by removing any parts that might be in the way
-for _, part in pairs(envFolder:GetChildren()) do
-    if
-        part:IsA("Part")
-        and (
-            part.Name == "Floor"
-            or part.Name == "NorthWall"
-            or part.Name == "SouthWall"
-            or part.Name == "WestWall"
-            or part.Name == "EastWall"
-        )
-    then
-        -- Do not remove the floor or walls
-    else
-        -- Remove any other parts that might interfere with spawn area
-        if (part.CFrame.Position - spawnCFrame.Position).Magnitude < 10 then
-            part:Destroy()
-        end
-    end
-end
-
 -- Simple far wall geometric emblem using orange/blue non-Neon panels
 local emblemSize = Vector3.new(4, 4, 0.5)
 makePart(
