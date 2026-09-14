@@ -159,8 +159,26 @@ local function updateViewModel(deltaTime)
             recoilYaw = math.min(0, recoilYaw + recoveryAmount)
         end
 
-        -- Snap to zero when close enough
-        if math.abs(recoilPitch) <= 0.001 and math.abs(recoilYaw) <= 0.001 then
+        -- First, if math.abs(recoilPitch) <= 0.001 then set recoilPitch = 0 end.
+        -- Separately, if math.abs(recoilYaw) <= 0.001 then set recoilYaw = 0 end.
+        -- Do not set appliedRecoilPitch or appliedRecoilYaw in either snap block.
+        if math.abs(recoilPitch) <= 0.001 then
+            recoilPitch = 0
+        end
+
+        if math.abs(recoilYaw) <= 0.001 then
+            recoilYaw = 0
+        end
+
+        -- Then reset shotCount and activeProfile only when recoilPitch == 0 and recoilYaw == 0 and appliedRecoilPitch == 0 and appliedRecoilYaw == 0.
+        if
+            recoilPitch == 0
+            and recoilYaw == 0
+            and appliedRecoilPitch == 0
+            and appliedRecoilYaw == 0
+        then
+            -- Inside that final reset block set all four recoil variables to zero, then shotCount=0 and activeProfile=nil.
+            -- This deliberately leaves activeProfile alive for one final RenderStepped frame so pitchDelta = 0 - appliedRecoilPitch and yawDelta = 0 - appliedRecoilYaw return the camera to neutral before clearing.
             recoilPitch = 0
             recoilYaw = 0
             appliedRecoilPitch = 0
