@@ -58,61 +58,140 @@ local function createViewModelPart(name, size, color, material)
     local part = Instance.new("Part")
     part.Name = name
     part.Size = size
-    part.Material = material or Enum.Material.Neon
+    part.Material = material or Enum.Material.SmoothPlastic
     part.Color = color
     part.Anchored = true
     part.CanCollide = false
     part.CanQuery = false
+    part.CanTouch = false
+    part.CastShadow = false
     part.Massless = true
-    part.LocalTransparencyModifier = 0.5
     return part
 end
 
+-- Compact AR parts
 local receiver = createViewModelPart(
     "Receiver",
     Vector3.new(1.2, 0.4, 0.6),
     Color3.fromRGB(50, 50, 50),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
+)
+local upperReceiver = createViewModelPart(
+    "UpperReceiver",
+    Vector3.new(1.2, 0.4, 0.6),
+    Color3.fromRGB(50, 50, 50),
+    Enum.Material.SmoothPlastic
+)
+local handguard = createViewModelPart(
+    "Handguard",
+    Vector3.new(0.8, 0.4, 1.2),
+    Color3.fromRGB(200, 100, 50),
+    Enum.Material.SmoothPlastic
 )
 local barrel = createViewModelPart(
     "Barrel",
     Vector3.new(0.2, 0.2, 1.5),
     Color3.fromRGB(100, 100, 100),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
+)
+local muzzleDevice = createViewModelPart(
+    "MuzzleDevice",
+    Vector3.new(0.2, 0.2, 0.2),
+    Color3.fromRGB(50, 50, 50),
+    Enum.Material.SmoothPlastic
 )
 local stock = createViewModelPart(
     "Stock",
     Vector3.new(0.4, 0.6, 0.8),
     Color3.fromRGB(30, 30, 30),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
 )
-local grip = createViewModelPart(
-    "Grip",
+local pistolGrip = createViewModelPart(
+    "PistolGrip",
     Vector3.new(0.3, 0.5, 0.3),
     Color3.fromRGB(40, 40, 40),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
 )
-local sight = createViewModelPart(
-    "Sight",
+local magazine = createViewModelPart(
+    "Magazine",
+    Vector3.new(0.2, 0.5, 0.8),
+    Color3.fromRGB(60, 60, 60),
+    Enum.Material.SmoothPlastic
+)
+local sightBase = createViewModelPart(
+    "SightBase",
     Vector3.new(0.2, 0.1, 0.2),
     Color3.fromRGB(60, 60, 60),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
 )
-
--- Muzzle marker
-local muzzleMarker = createViewModelPart(
+local sightHousing = createViewModelPart(
+    "SightHousing",
+    Vector3.new(0.2, 0.1, 0.2),
+    Color3.fromRGB(80, 80, 80),
+    Enum.Material.SmoothPlastic
+)
+local muzzle = createViewModelPart(
     "Muzzle",
     Vector3.new(0.1, 0.1, 0.1),
     Color3.fromRGB(255, 255, 255),
-    Enum.Material.Neon
+    Enum.Material.SmoothPlastic
 )
 
--- Store initial offsets
-local receiverOffset = CFrame.new(0.7, -0.7, -2.0)
-local barrelOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -0.5)
-local stockOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, 1.0)
-local gripOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -0.5)
-local sightOffset = CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -1.0)
+-- Store parts in a table for iteration
+local viewModelParts = {
+    receiver,
+    upperReceiver,
+    handguard,
+    barrel,
+    muzzleDevice,
+    stock,
+    pistolGrip,
+    magazine,
+    sightBase,
+    sightHousing,
+    muzzle
+}
+
+-- Set base offset
+local baseOffset = CFrame.new(0.72, -0.78, -1.55)
+
+-- Set up part positions relative to base offset
+local function setupPartPositions()
+    -- Receiver (base)
+    receiver.CFrame = baseOffset
+    
+    -- UpperReceiver above receiver
+    upperReceiver.CFrame = baseOffset * CFrame.new(0, 0.2, 0)
+    
+    -- Handguard toward negative Z from receiver
+    handguard.CFrame = baseOffset * CFrame.new(0, 0, -0.6)
+    
+    -- Barrel farther negative Z
+    barrel.CFrame = baseOffset * CFrame.new(0, 0, -1.2)
+    
+    -- MuzzleDevice at end of barrel
+    muzzleDevice.CFrame = baseOffset * CFrame.new(0, 0, -1.7)
+    
+    -- Stock positive Z
+    stock.CFrame = baseOffset * CFrame.new(0, 0, 1.2)
+    
+    -- PistolGrip below receiver, angled about -15 degrees on X
+    pistolGrip.CFrame = baseOffset * CFrame.new(0, -0.3, -0.3) * CFrame.Angles(-0.26, 0, 0)
+    
+    -- Magazine below receiver, angled about -15 degrees on X
+    magazine.CFrame = baseOffset * CFrame.new(0, -0.3, 0.3) * CFrame.Angles(-0.26, 0, 0)
+    
+    -- SightBase above receiver
+    sightBase.CFrame = baseOffset * CFrame.new(0, 0.25, -0.3)
+    
+    -- SightHousing above sight base
+    sightHousing.CFrame = baseOffset * CFrame.new(0, 0.3, -0.3)
+    
+    -- Muzzle transparent 1
+    muzzle.Material = Enum.Material.Neon
+    muzzle.Color = Color3.fromRGB(255, 255, 255)
+    muzzle.LocalTransparencyModifier = 1
+end
 
 -- Recoil state
 local recoilPitch = 0
@@ -129,13 +208,10 @@ local function updateViewModel(deltaTime)
         return
     end
 
-    -- Position viewmodel in front of camera
-    receiver.CFrame = camera.CFrame * receiverOffset
-    barrel.CFrame = camera.CFrame * barrelOffset
-    stock.CFrame = camera.CFrame * stockOffset
-    grip.CFrame = camera.CFrame * gripOffset
-    sight.CFrame = camera.CFrame * sightOffset
-    muzzleMarker.CFrame = camera.CFrame * CFrame.new(0.7, -0.7, -2.0) * CFrame.new(0, 0, -0.5)
+    -- Position all parts in front of camera using base offset
+    for _, part in ipairs(viewModelParts) do
+        part.CFrame = camera.CFrame * baseOffset
+    end
 
     -- Apply recoil effect
     if activeProfile then
@@ -226,15 +302,23 @@ UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     end
 end)
 
+-- Add fire handler connection using input.UserInputType == Enum.UserInputType.MouseButton1
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessedEvent then
+        local camera = Workspace.CurrentCamera
+        if not camera then return end
+        
+        -- Request fire
+        clientWeaponSystem:RequestFire(camera.CFrame.LookVector)
+    end
+end)
+
 -- Set up viewmodel visibility based on equipped state
 local function setViewModelVisibility()
     local transparency = clientWeaponSystem.equipped and 0 or 1
-    receiver.LocalTransparencyModifier = transparency
-    barrel.LocalTransparencyModifier = transparency
-    stock.LocalTransparencyModifier = transparency
-    grip.LocalTransparencyModifier = transparency
-    sight.LocalTransparencyModifier = transparency
-    muzzleMarker.LocalTransparencyModifier = transparency
+    for _, part in ipairs(viewModelParts) do
+        part.LocalTransparencyModifier = transparency
+    end
 end
 
 -- Bind to SetEquippedChanged callback
@@ -243,40 +327,40 @@ clientWeaponSystem.SetEquippedChanged = function()
 end
 
 -- Setup viewmodel as camera child
-receiver.Parent = Workspace.CurrentCamera
-barrel.Parent = Workspace.CurrentCamera
-stock.Parent = Workspace.CurrentCamera
-grip.Parent = Workspace.CurrentCamera
-sight.Parent = Workspace.CurrentCamera
-muzzleMarker.Parent = Workspace.CurrentCamera
+for _, part in ipairs(viewModelParts) do
+    part.Parent = Workspace.CurrentCamera
+end
 
 -- Initial visibility setup
+clientWeaponSystem:SetEquipped(true)
 setViewModelVisibility()
+setupPartPositions()
 
 -- Connect to RenderStepped for updates
 RunService.RenderStepped:Connect(updateViewModel)
 
+-- Remove auto-equip logic
 -- Auto-equip weapon on character spawn
-local function onCharacterAdded(character)
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    if not humanoid then
-        return
-    end
+-- local function onCharacterAdded(character)
+--     local humanoid = character:WaitForChild("Humanoid", 5)
+--     if not humanoid then
+--         return
+--     end
+--
+--     -- Wait for the tool to be in the backpack with timeout
+--     local tool = player.Backpack:FindFirstChild("AssaultRifle")
+--     if not tool then
+--         tool = player.Backpack:WaitForChild("AssaultRifle", 5)
+--     end
+--
+--     if tool and tool:IsA("Tool") then
+--         humanoid:EquipTool(tool)
+--     end
+-- end
 
-    -- Wait for the tool to be in the backpack with timeout
-    local tool = player.Backpack:FindFirstChild("AssaultRifle")
-    if not tool then
-        tool = player.Backpack:WaitForChild("AssaultRifle", 5)
-    end
-
-    if tool and tool:IsA("Tool") then
-        humanoid:EquipTool(tool)
-    end
-end
-
-player.CharacterAdded:Connect(onCharacterAdded)
+-- player.CharacterAdded:Connect(onCharacterAdded)
 
 -- Initial check in case character already exists
-if player.Character then
-    onCharacterAdded(player.Character)
-end
+-- if player.Character then
+--     onCharacterAdded(player.Character)
+-- end
