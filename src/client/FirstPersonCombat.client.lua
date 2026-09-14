@@ -267,6 +267,8 @@ end
 
 -- Set camera mode
 player.CameraMode = Enum.CameraMode.LockFirstPerson
+local MOUSE_SENSITIVITY = 0.35
+UserInputService.MouseDeltaSensitivity = MOUSE_SENSITIVITY
 
 -- Bind reload key
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
