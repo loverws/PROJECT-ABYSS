@@ -155,19 +155,19 @@ local viewModelParts = {
 -- Set base offset
 local baseOffset = CFrame.new(0.72, -0.78, -1.55)
 
--- Record distinct offsets for each part
-local partOffsets = {
-    receiver = CFrame.new(0, 0, 0),
-    upperReceiver = CFrame.new(0, 0.2, 0),
-    handguard = CFrame.new(0, 0, -0.6),
-    barrel = CFrame.new(0, 0, -1.2),
-    muzzleDevice = CFrame.new(0, 0, -1.7),
-    stock = CFrame.new(0, 0, 1.2),
-    pistolGrip = CFrame.new(0, -0.3, -0.3) * CFrame.Angles(-0.26, 0, 0),
-    magazine = CFrame.new(0, -0.3, 0.3) * CFrame.Angles(-0.26, 0, 0),
-    sightBase = CFrame.new(0, 0.25, -0.3),
-    sightHousing = CFrame.new(0, 0.3, -0.3),
-    muzzle = CFrame.new(0, 0, 0)
+-- Record distinct offsets for each part as records with baseOffset applied
+local viewModelRecords = {
+    { part = receiver, offset = baseOffset * CFrame.new(0, 0, 0) },
+    { part = upperReceiver, offset = baseOffset * CFrame.new(0, 0.2, 0) },
+    { part = handguard, offset = baseOffset * CFrame.new(0, 0, -0.6) },
+    { part = barrel, offset = baseOffset * CFrame.new(0, 0, -1.2) },
+    { part = muzzleDevice, offset = baseOffset * CFrame.new(0, 0, -1.7) },
+    { part = stock, offset = baseOffset * CFrame.new(0, 0, 1.2) },
+    { part = pistolGrip, offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, -0.3) },
+    { part = magazine, offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, 0.3) },
+    { part = sightBase, offset = baseOffset * CFrame.new(0, 0.25, -0.3) },
+    { part = sightHousing, offset = baseOffset * CFrame.new(0, 0.3, -0.3) },
+    { part = muzzle, offset = baseOffset * CFrame.new(0, 0, -1.85) }
 }
 
 -- Recoil state
@@ -186,11 +186,8 @@ local function updateViewModel(deltaTime)
     end
 
     -- Position each part with its distinct offset
-    for _, part in ipairs(viewModelParts) do
-        local offset = partOffsets[part.Name]
-        if offset then
-            part.CFrame = camera.CFrame * offset
-        end
+    for _, record in ipairs(viewModelRecords) do
+        record.part.CFrame = camera.CFrame * record.offset
     end
 
     -- Apply recoil effect
