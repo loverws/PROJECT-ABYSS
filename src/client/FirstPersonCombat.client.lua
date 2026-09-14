@@ -179,10 +179,16 @@ local viewModelRecords = {
 -- Recoil state
 local recoilPitch = 0
 local recoilYaw = 0
-local appliedRecoilPitch = 0
-local appliedRecoilYaw = 0
 local shotCount = 0
 local activeProfile = nil
+
+-- Reset recoil function
+local function resetRecoil()
+    recoilPitch = 0
+    recoilYaw = 0
+    shotCount = 0
+    activeProfile = nil
+end
 
 -- Update viewmodel position and recoil on RenderStepped
 local function updateViewModel(deltaTime)
@@ -191,25 +197,22 @@ local function updateViewModel(deltaTime)
         return
     end
 
-    -- Position each part with its distinct offset
-    for _, record in ipairs(viewModelRecords) do
-        record.part.CFrame = camera.CFrame * record.offset
-    end
-
-    -- Apply recoil effect
     if activeProfile then
-        local pitchDelta = recoilPitch - appliedRecoilPitch
-        local yawDelta = recoilYaw - appliedRecoilYaw
+        local baseLook = camera.CFrame.LookVector
+        local baseYaw = math.atan2(-baseLook.X, -baseLook.Z)
+        local basePitch = math.asin(math.clamp(baseLook.Y, -1, 1))
+        local finalYaw = baseYaw + recoilYaw
+        local finalPitch = math.clamp(basePitch + recoilPitch, math.rad(-85), math.rad(85))
+        local cosPitch = math.cos(finalPitch)
+        local finalLook = Vector3.new(
+            -math.sin(finalYaw) * cosPitch,
+            math.sin(finalPitch),
+            -math.cos(finalYaw) * cosPitch
+        )
+        local cameraPosition = camera.CFrame.Position
+        camera.CFrame = CFrame.lookAt(cameraPosition, cameraPosition + finalLook, Vector3.yAxis)
 
-        camera.CFrame = camera.CFrame * CFrame.Angles(pitchDelta, yawDelta, 0)
-
-        -- Update applied recoil
-        appliedRecoilPitch = recoilPitch
-        appliedRecoilYaw = recoilYaw
-
-        -- Recover recoil toward zero
         local recoveryAmount = activeProfile.recoverySpeed * deltaTime
-
         recoilPitch = math.max(0, recoilPitch - recoveryAmount)
 
         if recoilYaw > 0 then
@@ -218,33 +221,20 @@ local function updateViewModel(deltaTime)
             recoilYaw = math.min(0, recoilYaw + recoveryAmount)
         end
 
-        -- First, if math.abs(recoilPitch) <= 0.001 then set recoilPitch = 0 end.
-        -- Separately, if math.abs(recoilYaw) <= 0.001 then set recoilYaw = 0 end.
-        -- Do not set appliedRecoilPitch or appliedRecoilYaw in either snap block.
         if math.abs(recoilPitch) <= 0.001 then
             recoilPitch = 0
         end
-
         if math.abs(recoilYaw) <= 0.001 then
             recoilYaw = 0
         end
-
-        -- Then reset shotCount and activeProfile only when recoilPitch == 0 and recoilYaw == 0 and appliedRecoilPitch == 0 and appliedRecoilYaw == 0.
-        if
-            recoilPitch == 0
-            and recoilYaw == 0
-            and appliedRecoilPitch == 0
-            and appliedRecoilYaw == 0
-        then
-            -- Inside that final reset block set all four recoil variables to zero, then shotCount=0 and activeProfile=nil.
-            -- This deliberately leaves activeProfile alive for one final RenderStepped frame so pitchDelta = 0 - appliedRecoilPitch and yawDelta = 0 - appliedRecoilYaw return the camera to neutral before clearing.
-            recoilPitch = 0
-            recoilYaw = 0
-            appliedRecoilPitch = 0
-            appliedRecoilYaw = 0
+        if recoilPitch == 0 and recoilYaw == 0 then
             shotCount = 0
             activeProfile = nil
         end
+    end
+
+    for _, record in ipairs(viewModelRecords) do
+        record.part.CFrame = camera.CFrame * record.offset
     end
 end
 
@@ -326,6 +316,23 @@ clientWeaponSystem:SetEquipped(true)
 setViewModelVisibility()
 
 -- Connect to RenderStepped for updates
-RunService.RenderStepped:Connect(updateViewModel)
+local function onCurrentCameraChanged()
+    resetRecoil()
+    local currentCamera = Workspace.CurrentCamera
+    if not currentCamera then
+        return
+    end
+    for _, part in ipairs(viewModelParts) do
+        part.Parent = currentCamera
+    end
+end
+
+RunService:BindToRenderStep(
+    "FirstPersonCameraStability",
+    Enum.RenderPriority.Camera.Value + 1,
+    updateViewModel
+)
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(onCurrentCameraChanged)
+player.CharacterAdded:Connect(resetRecoil)
 
 -- Tool auto-equip is intentionally disabled to avoid duplicate Tool.Activated firing.
