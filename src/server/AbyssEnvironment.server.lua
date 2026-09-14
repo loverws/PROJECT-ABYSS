@@ -59,9 +59,9 @@ makePart(
     true
 )
 
--- Boundary walls: 4 walls, 12 high, off-white concrete/smoothplastic
+-- Boundary walls: 4 walls, 18 high, off-white concrete/smoothplastic
 local wallThickness = 1
-local wallHeight = 12
+local wallHeight = 18
 local wallLength = 80
 local wallWidth = 100
 
@@ -105,6 +105,16 @@ makePart(
     true
 )
 
+-- Ceiling: light-gray non-Neon at y=18.5, size 80x1x100, non-collidable
+makePart(
+    "Ceiling",
+    Vector3.new(80, 1, 100),
+    CFrame.new(0, 18.5, 0),
+    Color3.fromRGB(200, 200, 200),
+    Enum.Material.SmoothPlastic,
+    false
+)
+
 -- Replace nested grid with at most 60 decorative 1x0.04x1 square panels using spacing >=8
 local panelWidth = 1
 local panelHeight = 0.04
@@ -133,6 +143,59 @@ for _, x in ipairs(xPositions) do
             )
         end
     end
+end
+
+-- Add wall panels (8x8) to all four walls for stable reference
+-- Each panel is 1x0.04x1, placed every 8 studs
+local panelSpacing = 8
+local panelSize = Vector3.new(1, 0.04, 1)
+
+-- North wall panels
+for x = -36, 36, panelSpacing do
+    makePart(
+        "NorthWallPanel",
+        panelSize,
+        CFrame.new(x, 9, -wallWidth / 2 + 0.5),
+        Color3.fromRGB(100, 100, 100),
+        Enum.Material.SmoothPlastic,
+        false
+    )
+end
+
+-- South wall panels
+for x = -36, 36, panelSpacing do
+    makePart(
+        "SouthWallPanel",
+        panelSize,
+        CFrame.new(x, 9, wallWidth / 2 - 0.5),
+        Color3.fromRGB(100, 100, 100),
+        Enum.Material.SmoothPlastic,
+        false
+    )
+end
+
+-- West wall panels
+for z = -44, 44, panelSpacing do
+    makePart(
+        "WestWallPanel",
+        panelSize,
+        CFrame.new(-wallLength / 2 + 0.5, 9, z),
+        Color3.fromRGB(100, 100, 100),
+        Enum.Material.SmoothPlastic,
+        false
+    )
+end
+
+-- East wall panels
+for z = -44, 44, panelSpacing do
+    makePart(
+        "EastWallPanel",
+        panelSize,
+        CFrame.new(wallLength / 2 - 0.5, 9, z),
+        Color3.fromRGB(100, 100, 100),
+        Enum.Material.SmoothPlastic,
+        false
+    )
 end
 
 -- Symmetric cover: exactly 8 low blocks and 6 tall blocks at explicit mirrored x/z positions
@@ -208,6 +271,27 @@ makePart(
     Color3.fromRGB(180, 180, 180),
     Enum.Material.SmoothPlastic,
     true
+)
+
+-- Add identity panels for orientation
+-- Left side (orange) panels
+makePart(
+    "LeftIdentityPanel",
+    Vector3.new(2, 4, 0.5),
+    CFrame.new(-wallLength / 2 + 1, 2, -wallWidth / 2 + 2),
+    Color3.fromRGB(255, 100, 0),
+    Enum.Material.SmoothPlastic,
+    false
+)
+
+-- Right side (blue) panels
+makePart(
+    "RightIdentityPanel",
+    Vector3.new(2, 4, 0.5),
+    CFrame.new(wallLength / 2 - 1, 2, -wallWidth / 2 + 2),
+    Color3.fromRGB(0, 100, 255),
+    Enum.Material.SmoothPlastic,
+    false
 )
 
 -- Simple far wall geometric emblem using orange/blue non-Neon panels
