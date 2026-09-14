@@ -8,6 +8,11 @@ range ambience, and procedural viewmodel motion. Machine verification and Rojo b
 before checkpoint; Studio mobile-emulation and real-phone Human Gate remain separate and cannot be
 inferred from static evidence.
 
+Focused audio/UI polish is implemented with centralized layered placeholder profiles, bounded
+playback concurrency/cooldowns, timed reload cues, melee swing/contact separation, a shared arcade
+glass theme, icon-first mobile actions, objective-card progression, and compact damage feedback.
+Studio listening and mobile/PC visual capture remain required before Director acceptance.
+
 Updated: 2026-09-10
 Execution: WORK REMOTE READY
 Branch: main

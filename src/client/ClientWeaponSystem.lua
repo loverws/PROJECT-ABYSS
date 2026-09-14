@@ -8,7 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local GrenadeBallistics = require(Shared.GrenadeBallistics)
-local SoundProfiles = require(Shared.SoundProfiles)
+local SoundPlayer = require(Shared.SoundPlayer)
 
 local FireEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ReloadEvent = ReplicatedStorage:WaitForChild("ReloadWeapon")
@@ -21,6 +21,7 @@ local ClientWeaponSystem = {
     selectedSlot = 1,
     weaponType = WeaponTypes.AssaultRifle,
     grenadeHoldStarted = nil,
+    actionCooldownUntil = 0,
     previewParts = {},
     ammoByWeapon = {
         [WeaponTypes.AssaultRifle] = 30,
@@ -63,6 +64,7 @@ function ClientWeaponSystem:NotifyState()
             slot = self.selectedSlot,
             config = self:GetSelectedConfig(),
             grenadeHolding = self.grenadeHoldStarted ~= nil,
+            cooldownRemaining = math.max(0, self.actionCooldownUntil - os.clock()),
         })
     end
     if self.AmmoUpdated then
@@ -100,22 +102,7 @@ function ClientWeaponSystem:GetCenterAim(camera, character)
 end
 
 function ClientWeaponSystem:PlayProfile(profileName, parent)
-    local profile = SoundProfiles[profileName]
-    if not profile then
-        return
-    end
-    for index, layer in ipairs(profile.layers) do
-        local sound = Instance.new("Sound")
-        sound.Name = profileName .. "Layer" .. index
-        sound.SoundId = layer.id
-        sound.Volume = layer.volume * (1 + (math.random() * 2 - 1) * SoundProfiles.VOLUME_VARIATION)
-        sound.PlaybackSpeed = layer.speed
-            * (1 + (math.random() * 2 - 1) * SoundProfiles.PITCH_VARIATION)
-        sound.RollOffMinDistance, sound.RollOffMaxDistance = 5, profile.rolloff
-        sound.Parent = parent or Workspace.CurrentCamera or Workspace
-        sound:Play()
-        Debris:AddItem(sound, 4)
-    end
+    return SoundPlayer.Play(profileName, parent or Workspace.CurrentCamera or Workspace)
 end
 
 function ClientWeaponSystem:CreateTracer(origin, endpoint, weaponType)
@@ -209,6 +196,8 @@ function ClientWeaponSystem:SendAttack(charge)
     local origin, direction, aimPoint, result = self:GetCenterAim(camera, character)
     self.sequence += 1
     self.lastFire = now
+    local cooldown = 60 / config.fireRate
+    self.actionCooldownUntil = now + cooldown
     if config.kind == "Firearm" then
         self.ammoByWeapon[self.weaponType] = ammo - 1
         local muzzle = self.GetMuzzleCFrame and self:GetMuzzleCFrame() or CFrame.new(origin)
@@ -229,6 +218,11 @@ function ClientWeaponSystem:SendAttack(charge)
         direction = direction,
         throwCharge = charge,
     })
+    task.delay(cooldown, function()
+        if os.clock() >= self.actionCooldownUntil then
+            self:NotifyState()
+        end
+    end)
     return true
 end
 
@@ -289,7 +283,11 @@ function ClientWeaponSystem:HandleServerResponse(payload)
         self.ammoByWeapon[payload.weaponType] = payload.ammo
     end
     if payload.hitConfirmed then
-        self:PlayProfile(payload.critical and "ImpactCritical" or "ImpactNormal")
+        local impactProfile = payload.weaponType == WeaponTypes.Fists and "FistImpact"
+            or payload.weaponType == WeaponTypes.Knife and "KnifeImpact"
+            or payload.critical and "ImpactCritical"
+            or "ImpactNormal"
+        self:PlayProfile(impactProfile)
         if self.HitConfirmed then
             self.HitConfirmed(payload)
         end
@@ -305,6 +303,17 @@ function ClientWeaponSystem:Reload()
         return false
     end
     self.reloading = true
+    self:PlayProfile("ReloadStart")
+    task.delay(config.reloadTime * 0.56, function()
+        if self.reloading then
+            self:PlayProfile("ReloadInsert")
+        end
+    end)
+    task.delay(config.reloadTime * 0.84, function()
+        if self.reloading then
+            self:PlayProfile("ReloadAction")
+        end
+    end)
     if self.ReloadStarted then
         self.ReloadStarted(self.weaponType, config.reloadTime)
     end
@@ -323,9 +332,6 @@ function ClientWeaponSystem:HandleReloadResponse(payload)
     end
     if payload.weaponType and typeof(payload.ammo) == "number" then
         self.ammoByWeapon[payload.weaponType] = payload.ammo
-    end
-    if payload.accepted then
-        self:PlayProfile("Reload")
     end
     self:NotifyState()
 end

@@ -10,6 +10,7 @@ local WeaponAuthority = require(Shared.WeaponAuthority)
 local GrenadeBallistics = require(Shared.GrenadeBallistics)
 local DamageRegions = require(Shared.DamageRegions)
 local SoundProfiles = require(Shared.SoundProfiles)
+local SoundPlayer = require(Shared.SoundPlayer)
 
 local FireEvent = ReplicatedStorage:FindFirstChild("FireWeapon") or Instance.new("RemoteEvent")
 FireEvent.Name = "FireWeapon"
@@ -21,24 +22,7 @@ ReloadEvent.Parent = ReplicatedStorage
 local WeaponService = {}
 
 local function playProfile(parent, profileName)
-    local profile = SoundProfiles[profileName]
-    if not profile then
-        return
-    end
-    for index, layer in ipairs(profile.layers) do
-        local sound = Instance.new("Sound")
-        sound.Name = profileName .. "Layer" .. index
-        sound.SoundId = layer.id
-        sound.Volume = layer.volume * (1 + (math.random() * 2 - 1) * SoundProfiles.VOLUME_VARIATION)
-        sound.PlaybackSpeed = layer.speed
-            * (1 + (math.random() * 2 - 1) * SoundProfiles.PITCH_VARIATION)
-        sound.RollOffMinDistance, sound.RollOffMaxDistance = 5, profile.rolloff
-        sound.Parent = parent
-        pcall(function()
-            sound:Play()
-        end)
-        Debris:AddItem(sound, 4)
-    end
+    return SoundPlayer.Play(profileName, parent)
 end
 
 local function getHumanoidFromPart(part, excludedCharacter)

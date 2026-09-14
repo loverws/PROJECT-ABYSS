@@ -20,9 +20,20 @@ add rewards, add desktop controls, or change client ownership of aim/damage.
 
 ## Audio replacement
 
-`src/shared/SoundProfiles.lua` contains only Roblox-bundled placeholder paths. Each profile may be
-replaced by changing its `layers[].id` to an approved user-owned/Roblox asset while keeping volume,
-pitch variation, and rolloff bounds. No RIVALS or Call of Duty audio is included.
+`src/shared/SoundProfiles.lua` contains only Roblox-bundled placeholder paths. The focused polish
+pass separates attack/body/mechanical/tail, melee swing/contact, grenade pin/throw/bounce/blast,
+and reload magazine/action layers. `SoundPlayer` enforces profile cooldowns and voice caps. Each
+layer may be replaced by changing `layers[].id` to an approved user-owned/Roblox asset while
+keeping volume, pitch variation, cooldown, concurrency, and rolloff bounds. No RIVALS or Call of
+Duty audio is included. Bundled placeholders still require subjective Studio listening QA.
+
+## HUD polish
+
+The existing mobile HUD and tutorial HUD now share `UITheme`: dark translucent panels, gradients,
+strokes, rounded corners, shadows, icon-first controls, selected-slot state, compact ammo,
+reload/cooldown states, an objective card, progress/timer urgency, and compact target feedback.
+The deterministic layout matrix keeps the central 20 percent clear at common phone sizes and PC
+preview, but Studio screenshots remain required evidence.
 
 ## Required QA
 

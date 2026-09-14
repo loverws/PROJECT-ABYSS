@@ -21,16 +21,16 @@ console.log("PASS: server-owned region resolution, ordered multipliers, and spoo
 
 for (const token of ["targetHealth", "targetMaxHealth", "bodyRegion", "damageTier", "critical"])
   assert(service.includes(token), "feedback field missing: " + token);
-for (const token of ["DamageFeedback", "CRITICAL ", "targetHealth", "targetMaxHealth", "feedbackParts >= 8"])
+for (const token of ["DamageFeedback", '"CRITICAL"', "targetHealth", "targetMaxHealth", "feedbackParts >= 8"])
   assert(combat.includes(token), "bounded visible damage feedback missing: " + token);
 assert(service.includes('model:GetAttribute("LastVocalTime")') && service.includes("now - lastVocal < profile.cooldown"), "vocal cooldown missing");
 assert(target.includes("humanoid.Died:Connect") && target.includes("task.delay(RESPAWN_TIME") && target.includes("spawnDummy(definition)"), "death/reset path missing");
 let health=40; health=Math.max(0,health-Math.round(25*1.75)); assert(health===0,"critical death calculation"); health=150; assert(health===150,"reset health");
 console.log("PASS: feedback, critical tier, vocal cooldown, death, and reset contracts");
 
-for (const name of ["AssaultRifle","Pistol","Fists","Knife","Grenade","GrenadeExplosion","GrenadeBounce","ImpactNormal","ImpactCritical","VocalNormal","VocalStrong","Reload"])
+for (const name of ["AssaultRifle","Pistol","Fists","Knife","Grenade","GrenadeExplosion","GrenadeBounce","FistImpact","KnifeImpact","ImpactNormal","ImpactCritical","VocalNormal","VocalStrong","ReloadStart","ReloadInsert","ReloadAction"])
   assert(sounds.includes(name), "distinct sound profile missing: " + name);
-assert(sounds.includes("PITCH_VARIATION = 0.035") && sounds.includes("VOLUME_VARIATION = 0.06"), "bounded sound variation missing");
+assert(sounds.includes("SoundProfiles.PITCH_VARIATION, SoundProfiles.VOLUME_VARIATION = 0.025, 0.04"), "bounded sound variation missing");
 assert(!sounds.includes("electronicpingshort"), "metallic ding profile remains");
 console.log("PASS: distinct layered sound profiles and bounded variation");
 

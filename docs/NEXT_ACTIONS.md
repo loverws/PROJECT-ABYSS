@@ -7,6 +7,11 @@
 3. Director reviews visual/audio quality and returns bounded v13 rework items if needed.
 4. Only after Director readiness may the owner perform the real-phone Human Gate.
 
+Focused audio/UI evidence must include rifle burst clarity, pistol distinction, reload timing,
+melee swing-versus-contact, grenade bounce/explosion layers, normal/reloading/selected-slot HUD,
+tutorial progress/timer urgency, damage feedback, and a PC preview. Do not infer audio quality from
+static profile checks.
+
 Updated: 2026-09-10
 
 1. Orchestrator P0 safeguards. [COMPLETE]

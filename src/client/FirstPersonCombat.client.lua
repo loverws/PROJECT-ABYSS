@@ -5,6 +5,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local isTouchDevice = UserInputService.TouchEnabled
@@ -49,7 +50,19 @@ ammoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 ammoLabel.TextScaled = true
 ammoLabel.Font = Enum.Font.GothamBold
 ammoLabel.Text = "30"
+ammoLabel.Visible = not isTouchDevice
 ammoLabel.Parent = screenGui
+local ammoCorner = Instance.new("UICorner")
+ammoCorner.CornerRadius, ammoCorner.Parent = UDim.new(0, 9), ammoLabel
+local ammoStroke = Instance.new("UIStroke")
+ammoStroke.Color, ammoStroke.Transparency, ammoStroke.Thickness, ammoStroke.Parent =
+    Color3.fromRGB(55, 205, 255), 0.38, 1.4, ammoLabel
+local ammoGradient = Instance.new("UIGradient")
+ammoGradient.Color, ammoGradient.Rotation, ammoGradient.Parent =
+    ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 57, 75)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 19, 27)),
+    }), 90, ammoLabel
 
 local recoilPitch, recoilYaw, shotCount = 0, 0, 0
 local activeProfile = nil
@@ -197,7 +210,7 @@ end
 local feedbackParts = {}
 clientWeaponSystem.HitConfirmed = function(payload)
     local critical = payload.critical == true
-    crosshair.Text = critical and "✦" or "+"
+    crosshair.Text = critical and "X" or "+"
     crosshair.TextColor3 = critical and Color3.fromRGB(255, 218, 72) or Color3.fromRGB(255, 75, 75)
     if typeof(payload.hitPosition) == "Vector3" and typeof(payload.damage) == "number" then
         while #feedbackParts >= 8 do
@@ -211,20 +224,32 @@ clientWeaponSystem.HitConfirmed = function(payload)
             true, false, false, false, 1
         anchor.Parent = Workspace
         local billboard = Instance.new("BillboardGui")
-        billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop =
-            UDim2.fromOffset(130, 54), Vector3.new(0, 1.8, 0), true
+        billboard.Name, billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop =
+            "CompactTargetFeedback", UDim2.fromOffset(104, 46), Vector3.new(1.25, 1.35, 0), true
+        billboard.MaxDistance = 220
         billboard.Parent = anchor
-        local text = Instance.new("TextLabel")
-        text.Size, text.BackgroundTransparency = UDim2.fromScale(1, 0.62), 1
-        text.Text = (critical and "CRITICAL " or "")
-            .. tostring(payload.bodyRegion)
-            .. "  -"
-            .. tostring(payload.damage)
-        text.TextColor3, text.TextStrokeTransparency =
-            critical and Color3.fromRGB(255, 218, 72) or Color3.new(1, 1, 1), 0
-        text.Font, text.TextScaled, text.Parent = Enum.Font.GothamBold, true, billboard
+        local badge = Instance.new("TextLabel")
+        badge.Name, badge.Size, badge.Position =
+            "RegionBadge", UDim2.fromOffset(55, 18), UDim2.fromOffset(0, 2)
+        badge.BackgroundColor3, badge.BackgroundTransparency, badge.BorderSizePixel =
+            critical and Color3.fromRGB(255, 190, 42) or Color3.fromRGB(42, 53, 69), 0.08, 0
+        badge.Text, badge.TextColor3 =
+            critical and "CRITICAL" or string.upper(tostring(payload.bodyRegion)),
+            critical and Color3.fromRGB(35, 24, 4) or Color3.new(1, 1, 1)
+        badge.Font, badge.TextSize, badge.Parent = Enum.Font.GothamBlack, 9, billboard
+        local badgeCorner = Instance.new("UICorner")
+        badgeCorner.CornerRadius, badgeCorner.Parent = UDim.new(0, 5), badge
+        local damage = Instance.new("TextLabel")
+        damage.Name, damage.Size, damage.Position, damage.BackgroundTransparency =
+            "DamageNumber", UDim2.fromOffset(46, 24), UDim2.fromOffset(58, -1), 1
+        damage.Text, damage.TextColor3, damage.TextStrokeTransparency =
+            "-" .. tostring(payload.damage),
+            critical and Color3.fromRGB(255, 218, 72) or Color3.new(1, 1, 1),
+            0.25
+        damage.Font, damage.TextScaled, damage.Parent = Enum.Font.GothamBlack, true, billboard
         local barBack = Instance.new("Frame")
-        barBack.Size, barBack.Position = UDim2.fromScale(0.8, 0.18), UDim2.fromScale(0.1, 0.72)
+        barBack.Name, barBack.Size, barBack.Position =
+            "TargetHealthTrack", UDim2.new(1, 0, 0, 7), UDim2.fromOffset(0, 30)
         barBack.BackgroundColor3, barBack.BorderSizePixel, barBack.Parent =
             Color3.fromRGB(35, 38, 45), 0, billboard
         local bar = Instance.new("Frame")
@@ -233,8 +258,29 @@ clientWeaponSystem.HitConfirmed = function(payload)
             0,
             1
         )
-        bar.Size, bar.BackgroundColor3, bar.BorderSizePixel, bar.Parent =
-            UDim2.fromScale(ratio, 1), Color3.fromRGB(235, 69, 69), 0, barBack
+        bar.Name, bar.Size, bar.BackgroundColor3, bar.BorderSizePixel, bar.Parent =
+            "TargetHealthFill", UDim2.fromScale(ratio, 1), Color3.fromRGB(235, 69, 69), 0, barBack
+        for _, object in ipairs({ barBack, bar }) do
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius, corner.Parent = UDim.new(0, 4), object
+        end
+        TweenService
+            :Create(
+                anchor,
+                TweenInfo.new(
+                    critical and 0.7 or 0.48,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.Out
+                ),
+                { Position = payload.hitPosition + Vector3.new(0, 0.65, 0) }
+            )
+            :Play()
+        if critical then
+            local scale = Instance.new("UIScale")
+            scale.Scale, scale.Parent = 1.18, billboard
+            TweenService:Create(scale, TweenInfo.new(0.16, Enum.EasingStyle.Back), { Scale = 1 })
+                :Play()
+        end
         table.insert(feedbackParts, anchor)
         Debris:AddItem(anchor, critical and 0.8 or 0.55)
     end
