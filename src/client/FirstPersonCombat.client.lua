@@ -149,7 +149,7 @@ local viewModelParts = {
     magazine,
     sightBase,
     sightHousing,
-    muzzle
+    muzzle,
 }
 
 -- Set base offset
@@ -163,11 +163,17 @@ local viewModelRecords = {
     { part = barrel, offset = baseOffset * CFrame.new(0, 0, -1.2) },
     { part = muzzleDevice, offset = baseOffset * CFrame.new(0, 0, -1.7) },
     { part = stock, offset = baseOffset * CFrame.new(0, 0, 1.2) },
-    { part = pistolGrip, offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, -0.3) },
-    { part = magazine, offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, 0.3) },
+    {
+        part = pistolGrip,
+        offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, -0.3),
+    },
+    {
+        part = magazine,
+        offset = baseOffset * CFrame.Angles(-0.26, 0, 0) * CFrame.new(0, -0.3, 0.3),
+    },
     { part = sightBase, offset = baseOffset * CFrame.new(0, 0.25, -0.3) },
     { part = sightHousing, offset = baseOffset * CFrame.new(0, 0.3, -0.3) },
-    { part = muzzle, offset = baseOffset * CFrame.new(0, 0, -1.85) }
+    { part = muzzle, offset = baseOffset * CFrame.new(0, 0, -1.85) },
 }
 
 -- Recoil state
@@ -283,8 +289,10 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
     if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessedEvent then
         local camera = Workspace.CurrentCamera
-        if not camera then return end
-        
+        if not camera then
+            return
+        end
+
         -- Request fire
         clientWeaponSystem:RequestFire(camera.CFrame.LookVector)
     end
