@@ -1,17 +1,16 @@
--- Mobile-only combat controls. Buttons consume only their own Activated events.
+-- Mobile-only combat HUD. Only each explicit button owns its touch.
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ClientWeaponSystem = require(script.Parent.ClientWeaponSystem)
 
 local MobileInputController = {}
-local FIRE_BUTTON_SIZE = 88
-local SLOT_LABELS = { "1 RIFLE", "2 PISTOL", "3 KNIFE", "4 GRENADE" }
+local SLOT_LABELS = { "1 AR", "2 HG", "3 FISTS", "4 GRENADE" }
 
-local function round(button)
+local function round(guiObject, radius)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0.5, 0)
-    corner.Parent = button
+    corner.CornerRadius = UDim.new(radius or 0.25, 0)
+    corner.Parent = guiObject
 end
 
 local function makeButton(parent, name, text, size, position, anchor)
@@ -20,8 +19,8 @@ local function makeButton(parent, name, text, size, position, anchor)
     button.Size = size
     button.Position = position
     button.AnchorPoint = anchor
-    button.BackgroundColor3 = Color3.fromRGB(35, 42, 54)
-    button.BackgroundTransparency = 0.12
+    button.BackgroundColor3 = Color3.fromRGB(31, 38, 48)
+    button.BackgroundTransparency = 0.08
     button.BorderSizePixel = 0
     button.Text = text
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -39,6 +38,7 @@ local function createMobileCombatUI()
     if old then
         old:Destroy()
     end
+
     local gui = Instance.new("ScreenGui")
     gui.Name = "MobileCombatUI"
     gui.ResetOnSpawn = false
@@ -50,46 +50,63 @@ local function createMobileCombatUI()
         gui,
         "FireButton",
         "FIRE",
-        UDim2.fromOffset(FIRE_BUTTON_SIZE, FIRE_BUTTON_SIZE),
+        UDim2.fromOffset(88, 88),
         UDim2.new(1, -28, 0.4, 0),
         Vector2.new(1, 0.5)
     )
-    fireButton.Name = "FireButton"
-    fireButton.Size = UDim2.fromOffset(FIRE_BUTTON_SIZE, FIRE_BUTTON_SIZE)
-    fireButton.Position = UDim2.new(1, -28, 0.4, 0)
-    fireButton.AnchorPoint = Vector2.new(1, 0.5)
-    fireButton.Text = "FIRE"
-    fireButton.BackgroundColor3 = Color3.fromRGB(190, 55, 45)
-    fireButton.Activated:Connect(function()
-        ClientWeaponSystem:RequestFire()
+    fireButton.BackgroundColor3 = Color3.fromRGB(194, 58, 48)
+    round(fireButton, 0.5)
+    fireButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            ClientWeaponSystem:BeginPrimary()
+        end
+    end)
+    fireButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            ClientWeaponSystem:EndPrimary()
+        end
     end)
 
     local reload = makeButton(
         gui,
         "ReloadButton",
-        "R\n↻",
+        "R\nRELOAD",
         UDim2.fromOffset(70, 70),
-        UDim2.new(1, -126, 0.38, 0),
+        UDim2.new(1, -126, 0.48, 0),
         Vector2.new(1, 0.5)
     )
+    reload.BackgroundColor3 = Color3.fromRGB(45, 125, 205)
+    round(reload, 0.5)
     reload.Activated:Connect(function()
         ClientWeaponSystem:Reload()
     end)
 
     local status = Instance.new("TextLabel")
     status.Name = "WeaponStatus"
-    status.Size = UDim2.fromOffset(190, 34)
-    status.Position = UDim2.new(0.5, 0, 0, 10)
-    status.AnchorPoint = Vector2.new(0.5, 0)
+    status.Size = UDim2.fromOffset(190, 30)
+    status.Position = UDim2.new(0.5, 0, 1, -62)
+    status.AnchorPoint = Vector2.new(0.5, 1)
     status.BackgroundColor3 = Color3.fromRGB(15, 18, 24)
-    status.BackgroundTransparency = 0.25
+    status.BackgroundTransparency = 0.2
     status.TextColor3 = Color3.fromRGB(255, 255, 255)
     status.Font = Enum.Font.GothamBold
     status.TextScaled = true
     status.Parent = gui
-    local statusCorner = Instance.new("UICorner")
-    statusCorner.CornerRadius = UDim.new(0, 9)
-    statusCorner.Parent = status
+    round(status, 0.25)
+
+    local health = Instance.new("TextLabel")
+    health.Name = "HealthStatus"
+    health.Size = UDim2.fromOffset(94, 34)
+    health.Position = UDim2.new(0, 18, 1, -18)
+    health.AnchorPoint = Vector2.new(0, 1)
+    health.BackgroundColor3 = Color3.fromRGB(25, 31, 39)
+    health.BackgroundTransparency = 0.12
+    health.Text = "+ 150"
+    health.TextColor3 = Color3.fromRGB(116, 235, 143)
+    health.Font = Enum.Font.GothamBold
+    health.TextScaled = true
+    health.Parent = gui
+    round(health, 0.25)
 
     local slots = {}
     for slot, label in ipairs(SLOT_LABELS) do
@@ -113,23 +130,18 @@ local function createMobileCombatUI()
         local ammoText = firearm
                 and ("  " .. tostring(state.ammo) .. "/" .. state.config.magazineSize)
             or ""
-        status.Text = state.config.name .. ammoText
-        if state.reloading then
-            reload.Text = "..."
-            reload.BackgroundColor3 = Color3.fromRGB(220, 145, 35)
-        elseif firearm and state.ammo < state.config.magazineSize then
-            reload.Text = "R\n↻"
-            reload.BackgroundColor3 = Color3.fromRGB(45, 125, 205)
-        else
-            reload.Text = "R\n↻"
-            reload.BackgroundColor3 = Color3.fromRGB(65, 70, 80)
-        end
+        status.Text = state.grenadeHolding and "GRENADE: RELEASE TO THROW"
+            or state.config.name .. ammoText
+        reload.Text = state.reloading and "..." or "R\nRELOAD"
+        reload.BackgroundColor3 = state.reloading and Color3.fromRGB(220, 145, 35)
+            or firearm and Color3.fromRGB(45, 125, 205)
+            or Color3.fromRGB(65, 70, 80)
         reload.Active = firearm and not state.reloading
-        reload.AutoButtonColor = firearm and not state.reloading
+        reload.AutoButtonColor = reload.Active
         reload.TextTransparency = firearm and 0 or 0.55
         for slot, button in ipairs(slots) do
-            button.BackgroundColor3 = slot == state.slot and Color3.fromRGB(225, 120, 35)
-                or Color3.fromRGB(35, 42, 54)
+            button.BackgroundColor3 = slot == state.slot and Color3.fromRGB(231, 105, 42)
+                or Color3.fromRGB(31, 38, 48)
         end
     end
     ClientWeaponSystem:NotifyState()
@@ -140,9 +152,7 @@ function MobileInputController:Init()
         return
     end
     if RunService:IsStudio() then
-        print(
-            "[EMULATION_READINESS] mobile v13 controls initialized; native camera touch preserved"
-        )
+        print("[EMULATION_READINESS] mobile v13 button-scoped touch initialized")
     end
     createMobileCombatUI()
 end

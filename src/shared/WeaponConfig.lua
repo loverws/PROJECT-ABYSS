@@ -47,10 +47,11 @@ return {
         slot = 4,
         kind = "Utility",
         damage = 65,
-        fireRate = 30,
+        fireRate = 12,
         range = 70,
         radius = 12,
         cooldown = 5,
-        soundId = "rbxasset://sounds/impact_water.mp3",
+        fuseTime = 1.8,
+        soundId = "rbxasset://sounds/switch.wav",
     },
 }

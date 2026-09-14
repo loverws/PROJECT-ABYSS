@@ -1,324 +1,140 @@
---[[
-
-PROJECT ABYSS — Stage 1 Environment Script
-
-This script creates a deterministic bright arena for Stage 1 of PROJECT ABYSS.
-It uses only Workspace and Lighting services, with no access to Lighting.Sky.
-
-]]
-
-local Workspace = game:GetService("Workspace")
+-- Original bright, open-sky training range for the unfinished mobile v13 milestone.
 local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 
--- Clear existing folder if present
-local oldFolder = Workspace:FindFirstChild("AbyssStage1Environment")
-if oldFolder then
-    oldFolder:Destroy()
+local old = Workspace:FindFirstChild("AbyssTrainingRange")
+if old then
+    old:Destroy()
+end
+local range = Instance.new("Folder")
+range.Name = "AbyssTrainingRange"
+range:SetAttribute("Milestone", "v13")
+range:SetAttribute("SpawnFacesDownrange", true)
+range.Parent = Workspace
+
+local WHITE = Color3.fromRGB(239, 242, 246)
+local LIGHT_GRAY = Color3.fromRGB(205, 211, 220)
+local GRID = Color3.fromRGB(150, 160, 174)
+local RED = Color3.fromRGB(226, 53, 62)
+local ORANGE = Color3.fromRGB(242, 126, 45)
+local BLUE = Color3.fromRGB(48, 139, 224)
+
+local function part(name, size, cframe, color, collidable)
+    local item = Instance.new("Part")
+    item.Name, item.Size, item.CFrame = name, size, cframe
+    item.Color = color or WHITE
+    item.Material = Enum.Material.SmoothPlastic
+    item.Anchored, item.CanCollide = true, collidable == true
+    item.CanTouch, item.CanQuery = false, collidable == true
+    item.Parent = range
+    return item
 end
 
--- Create new environment folder
-local envFolder = Instance.new("Folder")
-envFolder.Name = "AbyssStage1Environment"
-envFolder.Parent = Workspace
-
--- Helper to create parts with consistent properties
-local function makePart(name, size, cframe, color, material, canCollide)
-    local part = Instance.new("Part")
-    part.Name = name
-    part.Size = size
-    part.CFrame = cframe
-    part.Color = color
-    part.Material = material or Enum.Material.SmoothPlastic
-    part.Anchored = true
-    part.CanCollide = canCollide or false
-    part.CanTouch = false
-    part.CanQuery = false
-    part.CastShadow = true
-    part.Parent = envFolder
-    return part
+local function label(adornee, text, color)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name, billboard.Adornee = "DistanceLabel", adornee
+    billboard.Size, billboard.StudsOffset = UDim2.fromOffset(150, 36), Vector3.new(0, 4.4, 0)
+    billboard.AlwaysOnTop, billboard.Parent = true, adornee
+    local value = Instance.new("TextLabel")
+    value.Size, value.BackgroundTransparency = UDim2.fromScale(1, 1), 0.18
+    value.BackgroundColor3, value.Text = Color3.fromRGB(22, 27, 34), text
+    value.TextColor3, value.TextScaled, value.Font =
+        color or Color3.new(1, 1, 1), true, Enum.Font.GothamBold
+    value.Parent = billboard
 end
 
--- Set lighting properties
-Lighting.Ambient = Color3.fromRGB(185, 190, 200)
-Lighting.OutdoorAmbient = Color3.fromRGB(160, 170, 185)
-Lighting.Brightness = 2.5
-Lighting.ClockTime = 13.5
-Lighting.FogStart = 180
-Lighting.FogEnd = 1000
-Lighting.EnvironmentDiffuseScale = 0.65
-Lighting.EnvironmentSpecularScale = 0.35
-Lighting.GlobalShadows = true
+Lighting.Ambient, Lighting.OutdoorAmbient =
+    Color3.fromRGB(175, 185, 200), Color3.fromRGB(155, 170, 190)
+Lighting.Brightness, Lighting.ClockTime = 3, 13.5
+Lighting.FogStart, Lighting.FogEnd, Lighting.GlobalShadows = 500, 1600, true
 
--- Floor: 80x1x100 at y=-0.5, medium light gray SmoothPlastic
-makePart(
-    "Floor",
-    Vector3.new(80, 1, 100),
-    CFrame.new(0, -0.5, 0),
-    Color3.fromRGB(150, 150, 150),
-    Enum.Material.SmoothPlastic,
-    true
-)
+part("RangeFloor", Vector3.new(104, 1, 260), CFrame.new(0, -0.5, -35), WHITE, true)
+part("LeftBoundary", Vector3.new(1, 12, 260), CFrame.new(-52, 6, -35), LIGHT_GRAY, true)
+part("RightBoundary", Vector3.new(1, 12, 260), CFrame.new(52, 6, -35), LIGHT_GRAY, true)
+part("Backstop", Vector3.new(104, 24, 2), CFrame.new(0, 12, -166), LIGHT_GRAY, true)
+for x = -48, 48, 8 do
+    part("FloorGridX", Vector3.new(0.08, 0.025, 256), CFrame.new(x, 0.02, -35), GRID, false)
+end
+for z = -160, 88, 8 do
+    part("FloorGridZ", Vector3.new(100, 0.025, 0.08), CFrame.new(0, 0.02, z), GRID, false)
+end
 
--- Boundary walls: 4 walls, 18 high, off-white concrete/smoothplastic
-local wallThickness = 1
-local wallHeight = 18
-local wallLength = 80
-local wallWidth = 100
+local spawn = Instance.new("SpawnLocation")
+spawn.Name, spawn.Size = "DownrangeSpawn", Vector3.new(8, 0.5, 8)
+spawn.CFrame = CFrame.lookAt(Vector3.new(0, 0.25, 82), Vector3.new(0, 0.25, -100))
+spawn.Color, spawn.Material = BLUE, Enum.Material.Neon
+spawn.Anchored, spawn.CanCollide, spawn.Neutral, spawn.Parent = true, true, true, range
+label(spawn, "TRAINING RANGE", Color3.fromRGB(135, 211, 255))
 
--- North wall
-makePart(
-    "NorthWall",
-    Vector3.new(wallLength, wallHeight, wallThickness),
-    CFrame.new(0, wallHeight / 2, -wallWidth / 2),
-    Color3.fromRGB(220, 220, 220),
-    Enum.Material.SmoothPlastic,
-    true
-)
+local lane =
+    part("CentralFireLane", Vector3.new(24, 0.08, 228), CFrame.new(0, 0.07, -34), LIGHT_GRAY, false)
+lane.Material = Enum.Material.Concrete
+for _, marker in ipairs({
+    { name = "NearRangeMarker", z = 50, text = "25 STUDS" },
+    { name = "MidRangeMarker", z = 10, text = "65 STUDS" },
+    { name = "FarRangeMarker", z = -50, text = "125 STUDS" },
+}) do
+    local stripe =
+        part(marker.name, Vector3.new(24, 0.12, 0.8), CFrame.new(0, 0.13, marker.z), RED, false)
+    stripe:SetAttribute("DistanceText", marker.text)
+    label(stripe, marker.text, Color3.fromRGB(255, 120, 120))
+end
 
--- South wall
-makePart(
-    "SouthWall",
-    Vector3.new(wallLength, wallHeight, wallThickness),
-    CFrame.new(0, wallHeight / 2, wallWidth / 2),
-    Color3.fromRGB(220, 220, 220),
-    Enum.Material.SmoothPlastic,
-    true
-)
+local function plateTarget(name, position, scale)
+    part(
+        name .. "Post",
+        Vector3.new(0.45, 5.5, 0.45),
+        CFrame.new(position - Vector3.new(0, 2.7, 0)),
+        GRID,
+        true
+    )
+    local plate =
+        part(name, Vector3.new(3.8 * scale, 3.8 * scale, 0.5), CFrame.new(position), RED, true)
+    plate.Shape = Enum.PartType.Cylinder
+    plate.CFrame = CFrame.new(position) * CFrame.Angles(0, math.rad(90), math.rad(90))
+    plate:SetAttribute("RangeTarget", true)
+end
+plateTarget("NearRedTarget", Vector3.new(-8, 5, 48), 1)
+plateTarget("MidRedTarget", Vector3.new(8, 6, 5), 0.85)
+plateTarget("FarRedTarget", Vector3.new(0, 7, -58), 0.72)
 
--- West wall
-makePart(
-    "WestWall",
-    Vector3.new(wallThickness, wallHeight, wallWidth),
-    CFrame.new(-wallLength / 2, wallHeight / 2, 0),
-    Color3.fromRGB(220, 220, 220),
-    Enum.Material.SmoothPlastic,
-    true
-)
-
--- East wall
-makePart(
-    "EastWall",
-    Vector3.new(wallThickness, wallHeight, wallWidth),
-    CFrame.new(wallLength / 2, wallHeight / 2, 0),
-    Color3.fromRGB(220, 220, 220),
-    Enum.Material.SmoothPlastic,
-    true
-)
-
--- Ceiling: light-gray non-Neon at y=18.5, size 80x1x100, non-collidable
-makePart(
-    "Ceiling",
-    Vector3.new(80, 1, 100),
-    CFrame.new(0, 18.5, 0),
-    Color3.fromRGB(200, 200, 200),
-    Enum.Material.SmoothPlastic,
+part(
+    "MovementLane",
+    Vector3.new(22, 0.1, 180),
+    CFrame.new(38, 0.08, -28),
+    Color3.fromRGB(224, 229, 235),
     false
 )
-
--- Replace nested grid with at most 60 decorative 1x0.04x1 square panels using spacing >=8
-local panelWidth = 1
-local panelHeight = 0.04
-local panelLength = 1
-
--- Calculate spawn area centered near z=35, safe and unobstructed
-local spawnCFrame = CFrame.new(0, 0, 35)
-
--- Create panels only at specific intervals to avoid continuous lines
--- Use x=-32,32,8 (9 values) and z=-40,40,16 (6 values), total <=54
-local xPositions = { -32, -24, -16, -8, 0, 8, 16, 24, 32 }
-local zPositions = { -40, -24, -8, 8, 24, 40 }
-
-for _, x in ipairs(xPositions) do
-    for _, z in ipairs(zPositions) do
-        -- Skip positions within 10 studs of spawn position
-        local distanceFromSpawn = (Vector3.new(x, 0, z) - spawnCFrame.Position).Magnitude
-        if distanceFromSpawn > 10 then
-            makePart(
-                "Panel",
-                Vector3.new(panelWidth, panelHeight, panelLength),
-                CFrame.new(x, -0.45, z),
-                Color3.fromRGB(60, 60, 60),
-                Enum.Material.SmoothPlastic,
-                false
-            )
-        end
+for index, z in ipairs({ 52, 20, -12, -44, -76 }) do
+    local x, height = index % 2 == 0 and 34 or 42, 9 + index
+    local wall = part(
+        "StaggeredWall" .. index,
+        Vector3.new(9, height, 1.2),
+        CFrame.new(x, height / 2, z),
+        index % 2 == 0 and BLUE or ORANGE,
+        true
+    )
+    wall:SetAttribute("MovementObstacle", true)
+end
+for index, z in ipairs({ 36, -28, -92 }) do
+    local ramp = part(
+        "MovementRamp" .. index,
+        Vector3.new(12, 1, 18),
+        CFrame.new(-38, 2.4, z) * CFrame.Angles(math.rad(-14), 0, 0),
+        LIGHT_GRAY,
+        true
+    )
+    ramp:SetAttribute("MovementObstacle", true)
+    part(
+        "MovementPlatform" .. index,
+        Vector3.new(15, 1, 13),
+        CFrame.new(-38, 4.6, z - 12),
+        index % 2 == 0 and BLUE or ORANGE,
+        true
+    )
+end
+for _, x in ipairs({ -25, 25 }) do
+    for _, z in ipairs({ 58, 12, -34, -80, -126 }) do
+        part("LanePillar", Vector3.new(3, 16, 3), CFrame.new(x, 8, z), WHITE, true)
     end
 end
-
--- Add wall panels (8x8) to all four walls for stable reference
--- Each panel is 1x0.04x1, placed every 8 studs
-local panelSpacing = 8
-local panelSize = Vector3.new(1, 0.04, 1)
-
--- North wall panels
-for x = -36, 36, panelSpacing do
-    makePart(
-        "NorthWallPanel",
-        panelSize,
-        CFrame.new(x, 9, -wallWidth / 2 + 0.5),
-        Color3.fromRGB(100, 100, 100),
-        Enum.Material.SmoothPlastic,
-        false
-    )
-end
-
--- South wall panels
-for x = -36, 36, panelSpacing do
-    makePart(
-        "SouthWallPanel",
-        panelSize,
-        CFrame.new(x, 9, wallWidth / 2 - 0.5),
-        Color3.fromRGB(100, 100, 100),
-        Enum.Material.SmoothPlastic,
-        false
-    )
-end
-
--- West wall panels
-for z = -44, 44, panelSpacing do
-    makePart(
-        "WestWallPanel",
-        panelSize,
-        CFrame.new(-wallLength / 2 + 0.5, 9, z),
-        Color3.fromRGB(100, 100, 100),
-        Enum.Material.SmoothPlastic,
-        false
-    )
-end
-
--- East wall panels
-for z = -44, 44, panelSpacing do
-    makePart(
-        "EastWallPanel",
-        panelSize,
-        CFrame.new(wallLength / 2 - 0.5, 9, z),
-        Color3.fromRGB(100, 100, 100),
-        Enum.Material.SmoothPlastic,
-        false
-    )
-end
-
--- Symmetric cover: exactly 8 low blocks and 6 tall blocks at explicit mirrored x/z positions
--- Gray/white bodies with orange and blue face accents
-local blockHeight = 1.5
-local blockWidth = 2
-local blockLength = 2
-
--- Low blocks (8 total)
-local lowBlocks = {
-    { x = -10, z = -10 },
-    { x = 10, z = -10 },
-    { x = -10, z = 10 },
-    { x = 10, z = 10 },
-    { x = -5, z = -15 },
-    { x = 5, z = -15 },
-    { x = -15, z = -5 },
-    { x = 15, z = -5 },
-}
-
-for _, pos in ipairs(lowBlocks) do
-    makePart(
-        "LowBlock",
-        Vector3.new(blockWidth, blockHeight, blockLength),
-        CFrame.new(pos.x, blockHeight / 2, pos.z),
-        Color3.fromRGB(180, 180, 180),
-        Enum.Material.SmoothPlastic,
-        true
-    )
-end
-
--- Tall blocks (6 total)
-local tallBlocks = {
-    { x = -10, z = -5 },
-    { x = 10, z = -5 },
-    { x = -5, z = 10 },
-    { x = 5, z = 10 },
-    { x = -15, z = 0 },
-    { x = 15, z = 0 },
-}
-
-for _, pos in ipairs(tallBlocks) do
-    makePart(
-        "TallBlock",
-        Vector3.new(blockWidth, blockHeight * 2, blockLength),
-        CFrame.new(pos.x, blockHeight, pos.z),
-        Color3.fromRGB(180, 180, 180),
-        Enum.Material.SmoothPlastic,
-        true
-    )
-end
-
--- Two side platforms with ramps or steps, within bounds
-local platformWidth = 4
-local platformLength = 6
-local platformHeight = 2
-
--- Left platform
-makePart(
-    "LeftPlatform",
-    Vector3.new(platformWidth, platformHeight, platformLength),
-    CFrame.new(-20, platformHeight / 2, 15),
-    Color3.fromRGB(180, 180, 180),
-    Enum.Material.SmoothPlastic,
-    true
-)
-
--- Right platform
-makePart(
-    "RightPlatform",
-    Vector3.new(platformWidth, platformHeight, platformLength),
-    CFrame.new(20, platformHeight / 2, 15),
-    Color3.fromRGB(180, 180, 180),
-    Enum.Material.SmoothPlastic,
-    true
-)
-
--- Add identity panels for orientation
--- Left side (orange) panels
-makePart(
-    "LeftIdentityPanel",
-    Vector3.new(2, 4, 0.5),
-    CFrame.new(-wallLength / 2 + 1, 2, -wallWidth / 2 + 2),
-    Color3.fromRGB(255, 100, 0),
-    Enum.Material.SmoothPlastic,
-    false
-)
-
--- Right side (blue) panels
-makePart(
-    "RightIdentityPanel",
-    Vector3.new(2, 4, 0.5),
-    CFrame.new(wallLength / 2 - 1, 2, -wallWidth / 2 + 2),
-    Color3.fromRGB(0, 100, 255),
-    Enum.Material.SmoothPlastic,
-    false
-)
-
--- Simple far wall geometric emblem using orange/blue non-Neon panels
-local emblemSize = Vector3.new(4, 4, 0.5)
-makePart(
-    "Emblem",
-    emblemSize,
-    CFrame.new(0, 2, -wallWidth / 2 + 2),
-    Color3.fromRGB(255, 100, 0),
-    Enum.Material.SmoothPlastic,
-    true
-) -- Orange
-makePart(
-    "EmblemBlue",
-    Vector3.new(4, 2, 0.5),
-    CFrame.new(0, 0, -wallWidth / 2 + 2),
-    Color3.fromRGB(0, 100, 255),
-    Enum.Material.SmoothPlastic,
-    true
-) -- Blue
-
--- Far-wall emblem just inside north wall at z=-49.4 and make it non-collidable
-makePart(
-    "FarWallEmblem",
-    Vector3.new(4, 4, 0.5),
-    CFrame.new(0, 2, -wallWidth / 2 + 0.6),
-    Color3.fromRGB(255, 100, 0),
-    Enum.Material.SmoothPlastic,
-    false
-) -- Orange

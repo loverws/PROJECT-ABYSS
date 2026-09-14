@@ -1,11 +1,13 @@
--- Server-authoritative four-slot combat.
+-- Server-authoritative firearms, swept melee and physical grenades.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
 local WeaponAuthority = require(Shared.WeaponAuthority)
+local GrenadeBallistics = require(Shared.GrenadeBallistics)
 
 local FireEvent = ReplicatedStorage:FindFirstChild("FireWeapon") or Instance.new("RemoteEvent")
 FireEvent.Name = "FireWeapon"
@@ -16,26 +18,138 @@ ReloadEvent.Parent = ReplicatedStorage
 
 local WeaponService = {}
 
-local function getHumanoidFromPart(part, character)
+local function getHumanoidFromPart(part, excludedCharacter)
     local model = part and part:FindFirstAncestorOfClass("Model")
-    if model and model ~= character then
-        return model:FindFirstChildOfClass("Humanoid")
+    if model and model ~= excludedCharacter then
+        return model:FindFirstChildOfClass("Humanoid"), model
     end
-    return nil
+    return nil, nil
 end
 
-local function damageRadius(position, radius, damage, character)
+local function safeSound(parent, name, soundId, volume)
+    local sound = Instance.new("Sound")
+    sound.Name = name
+    sound.SoundId = soundId
+    sound.Volume = volume
+    sound.RollOffMaxDistance = 100
+    sound.Parent = parent
+    pcall(function()
+        sound:Play()
+    end)
+    Debris:AddItem(sound, 4)
+end
+
+-- Thrower self-damage is intentionally disabled during the mobile training milestone.
+local function damageRadius(position, radius, damage, throwerCharacter)
     local params = OverlapParams.new()
     params.FilterType = Enum.RaycastFilterType.Exclude
-    params.FilterDescendantsInstances = { character }
+    params.FilterDescendantsInstances = { throwerCharacter }
     local seen = {}
-    for _, part in Workspace:GetPartBoundsInRadius(position, radius, params) do
-        local humanoid = getHumanoidFromPart(part, character)
-        if humanoid and not seen[humanoid] then
+    local hitAny = false
+    for _, hitPart in Workspace:GetPartBoundsInRadius(position, radius, params) do
+        local humanoid, model = getHumanoidFromPart(hitPart, throwerCharacter)
+        if humanoid and humanoid.Health > 0 and not seen[humanoid] then
             seen[humanoid] = true
-            humanoid:TakeDamage(damage)
+            local root = model and (model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart)
+            local distance = root and (root.Position - position).Magnitude or radius
+            local falloff = math.clamp(1 - distance / radius, 0.25, 1)
+            humanoid:TakeDamage(math.floor(damage * falloff + 0.5))
+            hitAny = true
         end
     end
+    return hitAny
+end
+
+local function sweptMelee(character, root, direction, config)
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = { character }
+    local start = root.Position + Vector3.new(0, 1.4, 0)
+    local cast = Workspace:Spherecast(start, 1.15, direction * config.range, params)
+    if not cast then
+        return nil, start + direction * config.range
+    end
+    local humanoid = getHumanoidFromPart(cast.Instance, character)
+    if humanoid and humanoid.Health > 0 then
+        humanoid:TakeDamage(config.damage)
+        return humanoid, cast.Position
+    end
+    return nil, cast.Position
+end
+
+local function createExplosion(position, config, character)
+    local flash = Instance.new("Part")
+    flash.Name = "GrenadeExplosionFlash"
+    flash.Shape = Enum.PartType.Ball
+    flash.Size = Vector3.new(1, 1, 1)
+    flash.Position = position
+    flash.Anchored = true
+    flash.CanCollide = false
+    flash.CanQuery = false
+    flash.CanTouch = false
+    flash.Material = Enum.Material.Neon
+    flash.Color = Color3.fromRGB(255, 142, 45)
+    flash.Parent = Workspace
+    local explosion = Instance.new("Explosion")
+    explosion.Position = position
+    explosion.BlastRadius = config.radius
+    explosion.BlastPressure = 0
+    explosion.DestroyJointRadiusPercent = 0
+    explosion.Parent = Workspace
+    safeSound(flash, "GrenadeExplosion", "rbxasset://sounds/Rocket shot.wav", 0.75)
+    flash.Size = Vector3.new(config.radius * 1.5, config.radius * 1.5, config.radius * 1.5)
+    flash.Transparency = 0.45
+    Debris:AddItem(flash, 0.16)
+    return damageRadius(position, config.radius, config.damage, character)
+end
+
+local function spawnGrenade(player, character, root, lookDirection, config, charge)
+    local velocity = GrenadeBallistics.GetLaunchVelocity(lookDirection, charge)
+    local horizontal = Vector3.new(velocity.X, 0, velocity.Z)
+    local forward = horizontal.Magnitude > 0.001 and horizontal.Unit or root.CFrame.LookVector
+    local origin = root.Position + Vector3.new(0, 1.55, 0) + forward * 1.4
+    local grenade = Instance.new("Part")
+    grenade.Name = "PhysicalTrainingGrenade"
+    grenade.Shape = Enum.PartType.Ball
+    grenade.Size = Vector3.new(0.72, 0.72, 0.72)
+    grenade.Color = Color3.fromRGB(68, 84, 55)
+    grenade.Material = Enum.Material.Metal
+    grenade.Position = origin
+    grenade.CanCollide = true
+    grenade.CustomPhysicalProperties = PhysicalProperties.new(1.2, 0.55, 0.58, 1, 1)
+    grenade.Parent = Workspace
+    pcall(function()
+        grenade:SetNetworkOwner(nil)
+    end)
+    grenade.AssemblyLinearVelocity = velocity
+
+    local bounceReady = true
+    grenade.Touched:Connect(function(hit)
+        if not bounceReady or hit:IsDescendantOf(character) then
+            return
+        end
+        bounceReady = false
+        safeSound(grenade, "GrenadeBounce", "rbxasset://sounds/collide.wav", 0.32)
+        task.delay(0.12, function()
+            bounceReady = true
+        end)
+    end)
+
+    task.delay(config.fuseTime, function()
+        if not grenade.Parent then
+            return
+        end
+        local position = grenade.Position
+        local hitAny = createExplosion(position, config, character)
+        FireEvent:FireClient(player, {
+            accepted = true,
+            weaponType = WeaponTypes.Grenade,
+            hitConfirmed = hitAny,
+            hitPosition = position,
+        })
+        grenade:Destroy()
+    end)
+    return grenade, velocity
 end
 
 function WeaponService:Init()
@@ -55,12 +169,13 @@ function WeaponService:HandleFireRequest(player, payload)
     local data = self.players[player]
     local character = player.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
-    local rootPart = root
     if
         not data
+        or not data.alive
         or not root
         or typeof(payload.origin) ~= "Vector3"
         or typeof(payload.direction) ~= "Vector3"
+        or payload.direction.Magnitude < 0.9
     then
         return
     end
@@ -69,9 +184,22 @@ function WeaponService:HandleFireRequest(player, payload)
     if not config then
         return
     end
-    if weaponType == WeaponTypes.Knife and player:GetAttribute("KnifeUnavailable") then
-        weaponType = WeaponTypes.Fists
-        config = WeaponConfig[weaponType]
+    if
+        config.kind == "Utility"
+        and (
+            typeof(payload.throwCharge) ~= "number"
+            or payload.throwCharge ~= payload.throwCharge
+            or payload.throwCharge < 0.25
+            or payload.throwCharge > 1
+        )
+    then
+        FireEvent:FireClient(player, {
+            accepted = false,
+            reason = "Invalid throw charge",
+            sequence = payload.sequence,
+            weaponType = weaponType,
+        })
+        return
     end
     local converted = {
         weaponType = weaponType,
@@ -79,20 +207,19 @@ function WeaponService:HandleFireRequest(player, payload)
         origin = { x = payload.origin.X, y = payload.origin.Y, z = payload.origin.Z },
         direction = { x = payload.direction.X, y = payload.direction.Y, z = payload.direction.Z },
     }
-    local authoritativeOrigin = {
-        x = root.Position.X,
-        y = root.Position.Y,
-        z = root.Position.Z,
-    }
-    local result =
-        WeaponAuthority.CanFire(data, converted, Workspace:GetServerTimeNow(), authoritativeOrigin)
+    local rootPosition = root.Position
+    local result = WeaponAuthority.CanFire(data, converted, Workspace:GetServerTimeNow(), {
+        x = rootPosition.X,
+        y = rootPosition.Y,
+        z = rootPosition.Z,
+    })
     if not result.accepted then
         FireEvent:FireClient(player, {
             accepted = false,
             reason = result.reason,
             sequence = payload.sequence,
             weaponType = weaponType,
-            ammo = (data.ammo or {})[weaponType],
+            ammo = data.ammo[weaponType],
         })
         return
     end
@@ -104,48 +231,29 @@ function WeaponService:HandleFireRequest(player, payload)
         data.ammo[weaponType] -= 1
     end
 
-    local acceptedOrigin = payload.origin
-    local unitDirection = payload.direction.Unit
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    raycastParams.FilterDescendantsInstances = { character }
-    local maxRange = config.range
-    local castOrigin = config.kind == "Melee" and root.Position or acceptedOrigin
-    local cast = if config.kind == "Firearm"
-        then Workspace:Raycast(acceptedOrigin, unitDirection * 300, raycastParams)
-        else Workspace:Raycast(castOrigin, unitDirection * maxRange, raycastParams)
-    local hitPosition = cast and cast.Position or castOrigin + unitDirection * maxRange
-
+    local direction = payload.direction.Unit
+    local hitPosition = payload.origin + direction * config.range
+    local hitConfirmed = false
     if config.kind == "Utility" then
-        local throwOrigin = root.Position + Vector3.new(0, 1.5, 0)
-        local grenade = Instance.new("Part")
-        grenade.Name = "TrainingGrenade"
-        grenade.Shape = Enum.PartType.Ball
-        grenade.Size = Vector3.new(0.7, 0.7, 0.7)
-        grenade.Color = Color3.fromRGB(65, 80, 65)
-        grenade.Material = Enum.Material.Metal
-        grenade.CFrame = CFrame.new(throwOrigin)
-        grenade.CanCollide = true
-        grenade.Parent = Workspace
-        grenade.AssemblyLinearVelocity = unitDirection * 65 + Vector3.new(0, 18, 0)
-        task.delay(1.2, function()
-            if not grenade.Parent then
-                return
+        local _, launchVelocity =
+            spawnGrenade(player, character, root, direction, config, payload.throwCharge)
+        hitPosition = root.Position + launchVelocity * 0.1
+    elseif config.kind == "Melee" then
+        local humanoid
+        humanoid, hitPosition = sweptMelee(character, root, direction, config)
+        hitConfirmed = humanoid ~= nil
+    else
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = { character }
+        local cast = Workspace:Raycast(payload.origin, direction * config.range, params)
+        if cast then
+            hitPosition = cast.Position
+            local humanoid = getHumanoidFromPart(cast.Instance, character)
+            if humanoid and humanoid.Health > 0 then
+                humanoid:TakeDamage(config.damage)
+                hitConfirmed = true
             end
-            local position = grenade.Position
-            damageRadius(position, config.radius, config.damage, character)
-            local blast = Instance.new("Explosion")
-            blast.Position = position
-            blast.BlastRadius = config.radius
-            blast.BlastPressure = 0
-            blast.DestroyJointRadiusPercent = 0
-            blast.Parent = Workspace
-            grenade:Destroy()
-        end)
-    elseif cast then
-        local humanoid = getHumanoidFromPart(cast.Instance, character)
-        if humanoid then
-            humanoid:TakeDamage(config.damage)
         end
     end
 
@@ -156,6 +264,7 @@ function WeaponService:HandleFireRequest(player, payload)
         weaponType = weaponType,
         ammo = data.ammo[weaponType],
         hitPosition = hitPosition,
+        hitConfirmed = hitConfirmed,
     })
     if config.kind == "Firearm" then
         for otherPlayer in pairs(self.players) do
@@ -164,14 +273,14 @@ function WeaponService:HandleFireRequest(player, payload)
                     accepted = true,
                     presentationOnly = true,
                     weaponType = weaponType,
-                    presentationOrigin = rootPart.Position,
+                    presentationOrigin = root.Position,
                     hitPosition = hitPosition,
                 })
             end
         end
     end
     if RunService:IsStudio() then
-        print(("[COMBAT] %s %s accepted"):format(player.Name, weaponType))
+        print(("[COMBAT_V13] %s %s accepted"):format(player.Name, weaponType))
     end
 end
 
@@ -221,12 +330,6 @@ function WeaponService:SetupPlayer(player)
         lastFireByWeapon = {},
         reloading = false,
     }
-    if not self.firstPlayer then
-        self.firstPlayer = player
-        if RunService:IsStudio() then
-            player:SetAttribute("StudioGateDriver", true)
-        end
-    end
 end
 
 function WeaponService:KillPlayer(player)

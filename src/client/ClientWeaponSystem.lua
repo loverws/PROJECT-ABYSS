@@ -1,4 +1,4 @@
--- Mobile-first client weapon prediction and presentation.
+-- Mobile-first client weapon input, prediction and presentation.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -7,6 +7,7 @@ local Debris = game:GetService("Debris")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponTypes = require(Shared.WeaponTypes)
 local WeaponConfig = require(Shared.WeaponConfig)
+local GrenadeBallistics = require(Shared.GrenadeBallistics)
 
 local FireEvent = ReplicatedStorage:WaitForChild("FireWeapon")
 local ReloadEvent = ReplicatedStorage:WaitForChild("ReloadWeapon")
@@ -18,6 +19,8 @@ local ClientWeaponSystem = {
     equipped = false,
     selectedSlot = 1,
     weaponType = WeaponTypes.AssaultRifle,
+    grenadeHoldStarted = nil,
+    previewParts = {},
     ammoByWeapon = {
         [WeaponTypes.AssaultRifle] = 30,
         [WeaponTypes.Pistol] = 12,
@@ -26,7 +29,7 @@ local ClientWeaponSystem = {
 local SLOT_WEAPONS = {
     [1] = WeaponTypes.AssaultRifle,
     [2] = WeaponTypes.Pistol,
-    [3] = WeaponTypes.Knife,
+    [3] = WeaponTypes.Fists,
     [4] = WeaponTypes.Grenade,
 }
 local AIM_RANGE = 300
@@ -49,18 +52,20 @@ function ClientWeaponSystem:GetAmmo()
 end
 
 function ClientWeaponSystem:NotifyState()
-    self.ammo = self:GetAmmo()
+    local ammo = self:GetAmmo()
+    self.ammo = ammo
     if self.StateUpdated then
         self.StateUpdated({
-            ammo = self.ammo,
+            ammo = ammo,
             reloading = self.reloading,
             weaponType = self.weaponType,
             slot = self.selectedSlot,
             config = self:GetSelectedConfig(),
+            grenadeHolding = self.grenadeHoldStarted ~= nil,
         })
     end
     if self.AmmoUpdated then
-        self.AmmoUpdated(self.ammo or 0)
+        self.AmmoUpdated(ammo or 0)
     end
     if self.ViewModelUpdated then
         self.ViewModelUpdated(self.weaponType)
@@ -72,9 +77,9 @@ function ClientWeaponSystem:SelectSlot(slot)
     if not weaponType or self.reloading then
         return false
     end
-    if slot == 3 and Players.LocalPlayer:GetAttribute("KnifeUnavailable") then
-        weaponType = WeaponTypes.Fists
-    end
+    -- RIVALS-inspired mobile default: slot 3 is visible fists. Knife remains a supported alternate.
+    self:ClearGrenadePreview()
+    self.grenadeHoldStarted = nil
     self.selectedSlot = slot
     self.weaponType = weaponType
     self:NotifyState()
@@ -88,90 +93,182 @@ function ClientWeaponSystem:GetCenterAim(camera, character)
     local params = RaycastParams.new()
     params.FilterType = Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances = { character }
-    local raycastResult = Workspace:Raycast(centerRay.Origin, shotDirection * AIM_RANGE, params)
-    local aimPoint = if raycastResult
-        then raycastResult.Position
-        else centerRay.Origin + shotDirection * AIM_RANGE
-    return centerRay.Origin, shotDirection, aimPoint, raycastResult
+    local result = Workspace:Raycast(centerRay.Origin, shotDirection * AIM_RANGE, params)
+    local aimPoint = result and result.Position or centerRay.Origin + shotDirection * AIM_RANGE
+    return centerRay.Origin, shotDirection, aimPoint, result
 end
 
-function ClientWeaponSystem:PlayCue(config)
-    if not config.soundId or config.soundId == "" then
+function ClientWeaponSystem:PlaySoundId(name, soundId, volume)
+    if not soundId or soundId == "" then
         return
     end
     local sound = Instance.new("Sound")
-    sound.Name = config.name .. "Cue"
-    sound.SoundId = config.soundId
-    sound.Volume = config.kind == "Firearm" and 0.45 or 0.35
+    sound.Name = name
+    sound.SoundId = soundId
+    sound.Volume = volume or 0.45
+    sound.RollOffMaxDistance = 90
     sound.Parent = Workspace.CurrentCamera or Workspace
     sound:Play()
-    Debris:AddItem(sound, 3)
+    Debris:AddItem(sound, 4)
+end
+
+function ClientWeaponSystem:PlayCue(config)
+    self:PlaySoundId(config.name .. "Cue", config.soundId, config.kind == "Firearm" and 0.45 or 0.5)
 end
 
 function ClientWeaponSystem:CreateTracer(origin, endpoint, weaponType)
-    local travelVector = endpoint - origin
-    if travelVector.Magnitude < 0.01 then
+    local travel = endpoint - origin
+    if travel.Magnitude < 0.01 then
         return
     end
-    local direction = travelVector.Unit
+    local direction = travel.Unit
     local bullet = Instance.new("Part")
     bullet.Name = "VisualBullet"
-    bullet.Size = weaponType == WeaponTypes.Pistol and Vector3.new(0.08, 0.08, 0.35)
-        or Vector3.new(0.12, 0.12, 0.6)
+    bullet.Size = weaponType == WeaponTypes.Pistol and Vector3.new(0.07, 0.07, 0.3)
+        or Vector3.new(0.1, 0.1, 0.5)
     bullet.CFrame = CFrame.lookAt(origin, origin + direction)
     bullet.Anchored = true
-    bullet.CanCollide, bullet.CanTouch, bullet.CanQuery = false, false, false
+    bullet.CanCollide = false
+    bullet.CanTouch = false
+    bullet.CanQuery = false
     bullet.Material = Enum.Material.Neon
     bullet.Color = weaponType == WeaponTypes.Pistol and Color3.fromRGB(130, 210, 255)
-        or Color3.fromRGB(255, 210, 120)
+        or Color3.fromRGB(255, 205, 105)
     bullet.Parent = Workspace
-    local travelTime = math.clamp(travelVector.Magnitude / 300, 0.04, 0.7)
+    local travelTime = math.clamp(travel.Magnitude / 300, 0.04, 0.7)
     TweenService:Create(bullet, TweenInfo.new(travelTime, Enum.EasingStyle.Linear), {
         CFrame = CFrame.lookAt(endpoint, endpoint + direction),
     }):Play()
     Debris:AddItem(bullet, travelTime + 0.08)
 end
 
-function ClientWeaponSystem:RequestFire()
+function ClientWeaponSystem:ClearGrenadePreview()
+    for _, item in ipairs(self.previewParts) do
+        item:Destroy()
+    end
+    table.clear(self.previewParts)
+end
+
+function ClientWeaponSystem:ShowGrenadePreview(origin, direction, charge)
+    self:ClearGrenadePreview()
+    local velocity = GrenadeBallistics.GetLaunchVelocity(direction, charge)
+    for index = 1, 8 do
+        local sample = GrenadeBallistics.SamplePosition(origin, velocity, index * 0.08)
+        local dot = Instance.new("Part")
+        dot.Name = "GrenadeArcPreview"
+        dot.Shape = Enum.PartType.Ball
+        dot.Size = Vector3.new(0.12, 0.12, 0.12)
+        dot.Color = Color3.fromRGB(255, 205, 80)
+        dot.Material = Enum.Material.Neon
+        dot.Anchored = true
+        dot.CanCollide = false
+        dot.CanTouch = false
+        dot.CanQuery = false
+        dot.Position = sample
+        dot.Parent = Workspace
+        table.insert(self.previewParts, dot)
+    end
+end
+
+function ClientWeaponSystem:UpdateGrenadePreview()
+    if not self.grenadeHoldStarted or self.weaponType ~= WeaponTypes.Grenade then
+        return
+    end
+    local camera, character = Workspace.CurrentCamera, Players.LocalPlayer.Character
+    if not camera or not character then
+        return
+    end
+    local origin, direction = self:GetCenterAim(camera, character)
+    local charge = math.clamp((os.clock() - self.grenadeHoldStarted) / 1.1, 0.25, 1)
+    self:ShowGrenadePreview(origin, direction, charge)
+end
+
+function ClientWeaponSystem:CanAttack(now, config)
+    return now - self.lastFire >= 60 / config.fireRate
+end
+
+function ClientWeaponSystem:SendAttack(charge)
     local character = Players.LocalPlayer.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
     local camera = Workspace.CurrentCamera
     local config = self:GetSelectedConfig()
     if not root or not camera or not config or self.reloading then
-        return
+        return false
     end
     local now = os.clock()
-    if now - self.lastFire < 60 / config.fireRate then
-        return
+    if not self:CanAttack(now, config) then
+        return false
     end
     local ammo = self:GetAmmo()
     if config.kind == "Firearm" and (not ammo or ammo <= 0) then
         self:NotifyState()
-        return
+        return false
     end
-    local gameplayOrigin, shotDirection, aimPoint, raycastResult =
-        self:GetCenterAim(camera, character)
-    local muzzleCFrame = self:GetMuzzleCFrame()
-    if raycastResult then
-        aimPoint = raycastResult.Position
-    end
+    local origin, direction, aimPoint, result = self:GetCenterAim(camera, character)
     self.sequence += 1
     self.lastFire = now
     if config.kind == "Firearm" then
         self.ammoByWeapon[self.weaponType] = ammo - 1
-        self:CreateTracer(muzzleCFrame.Position, aimPoint)
+        local muzzle = self.GetMuzzleCFrame and self:GetMuzzleCFrame() or CFrame.new(origin)
+        self:CreateTracer(muzzle.Position, result and result.Position or aimPoint, self.weaponType)
         if self.AddRecoil then
             self:AddRecoil(self.weaponType, false)
         end
+    end
+    if self.ActionStarted then
+        self.ActionStarted(self.weaponType)
     end
     self:PlayCue(config)
     self:NotifyState()
     FireEvent:FireServer({
         weaponType = self.weaponType,
         sequence = self.sequence,
-        origin = gameplayOrigin,
-        direction = shotDirection,
+        origin = origin,
+        direction = direction,
+        throwCharge = charge,
     })
+    return true
+end
+
+function ClientWeaponSystem:BeginPrimary()
+    if self.weaponType ~= WeaponTypes.Grenade then
+        return self:SendAttack(nil)
+    end
+    if self.grenadeHoldStarted then
+        return false
+    end
+    local camera = Workspace.CurrentCamera
+    local character = Players.LocalPlayer.Character
+    if not camera or not character then
+        return false
+    end
+    local origin, direction = self:GetCenterAim(camera, character)
+    self.grenadeHoldStarted = os.clock()
+    self:ShowGrenadePreview(origin, direction, 0.65)
+    self:NotifyState()
+    return true
+end
+
+function ClientWeaponSystem:EndPrimary()
+    if self.weaponType ~= WeaponTypes.Grenade or not self.grenadeHoldStarted then
+        return false
+    end
+    local charge = math.clamp((os.clock() - self.grenadeHoldStarted) / 1.1, 0.25, 1)
+    self.grenadeHoldStarted = nil
+    self:ClearGrenadePreview()
+    return self:SendAttack(charge)
+end
+
+function ClientWeaponSystem:RequestFire()
+    if self.weaponType == WeaponTypes.Grenade then
+        if self:BeginPrimary() then
+            task.delay(0.12, function()
+                self:EndPrimary()
+            end)
+        end
+        return true
+    end
+    return self:SendAttack(nil)
 end
 
 function ClientWeaponSystem:HandleServerResponse(payload)
@@ -188,6 +285,12 @@ function ClientWeaponSystem:HandleServerResponse(payload)
     end
     if typeof(payload.ammo) == "number" and payload.weaponType then
         self.ammoByWeapon[payload.weaponType] = payload.ammo
+    end
+    if payload.hitConfirmed then
+        self:PlaySoundId("HitConfirm", "rbxasset://sounds/button.wav", 0.35)
+        if self.HitConfirmed then
+            self.HitConfirmed(payload.hitPosition)
+        end
     end
     self:NotifyState()
 end
@@ -214,11 +317,7 @@ function ClientWeaponSystem:HandleReloadResponse(payload)
         self.ammoByWeapon[payload.weaponType] = payload.ammo
     end
     if payload.accepted then
-        self:PlayCue({
-            name = "Reload",
-            kind = "Reload",
-            soundId = "rbxasset://sounds/switch.wav",
-        })
+        self:PlaySoundId("Reload", "rbxasset://sounds/switch.wav", 0.4)
     end
     self:NotifyState()
 end

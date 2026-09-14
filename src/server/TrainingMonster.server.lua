@@ -1,143 +1,119 @@
--- Original primitive training monster with server-owned health and respawn.
+-- Server-owned colored humanoid training dummies for near, mid, and far lanes.
 local Workspace = game:GetService("Workspace")
 local RESPAWN_TIME = 3
-local SPAWN_CFRAME = CFrame.new(0, 3, -32) * CFrame.Angles(0, math.pi, 0)
-
-local old = Workspace:FindFirstChild("TrainingMonster")
+local old = Workspace:FindFirstChild("TrainingDummies")
 if old then
     old:Destroy()
 end
+local folder = Instance.new("Folder")
+folder.Name, folder.Parent = "TrainingDummies", Workspace
 
-local function part(model, name, size, offset, color, shape)
+local DUMMIES = {
+    {
+        name = "NearDummy",
+        position = Vector3.new(6, 3, 44),
+        color = Color3.fromRGB(237, 82, 67),
+        distance = "NEAR / 30",
+    },
+    {
+        name = "MidDummy",
+        position = Vector3.new(-6, 3, 0),
+        color = Color3.fromRGB(54, 151, 228),
+        distance = "MID / 75",
+    },
+    {
+        name = "FarDummy",
+        position = Vector3.new(9, 3, -62),
+        color = Color3.fromRGB(237, 174, 55),
+        distance = "FAR / 135",
+    },
+}
+
+local function bodyPart(model, name, size, offset, color, query)
     local item = Instance.new("Part")
-    item.Name = name
-    item.Size = size
-    item.CFrame = SPAWN_CFRAME * offset
-    item.Anchored = true
-    item.CanCollide = name == "Body"
-    item.CanTouch = false
-    item.CanQuery = true
-    item.Material = Enum.Material.SmoothPlastic
-    item.Color = color
-    if shape then
-        item.Shape = shape
-    end
+    item.Name, item.Size = name, size
+    item.CFrame, item.Color = model:GetAttribute("SpawnCFrame") * offset, color
+    item.Material, item.Anchored = Enum.Material.SmoothPlastic, true
+    item.CanCollide, item.CanTouch, item.CanQuery = name == "Torso", false, query ~= false
     item.Parent = model
     return item
 end
 
-local function spawnMonster()
+local function spawnDummy(definition)
     local model = Instance.new("Model")
-    model.Name = "TrainingMonster"
+    model.Name = definition.name
     model:SetAttribute("ServerAuthoritativeTarget", true)
     model:SetAttribute("RespawnSeconds", RESPAWN_TIME)
-
-    local root = part(
+    model:SetAttribute("RangeBand", definition.distance)
+    model:SetAttribute(
+        "SpawnCFrame",
+        CFrame.new(definition.position) * CFrame.Angles(0, math.pi, 0)
+    )
+    local root = bodyPart(
         model,
         "HumanoidRootPart",
-        Vector3.new(2.6, 4.8, 1.8),
+        Vector3.new(2, 2, 1),
         CFrame.new(),
-        Color3.fromRGB(72, 38, 92)
+        definition.color,
+        false
     )
     root.Transparency = 1
-    part(
-        model,
-        "Body",
-        Vector3.new(3.5, 4.3, 2.1),
-        CFrame.new(0, 0, 0),
-        Color3.fromRGB(92, 48, 118)
-    )
-    part(
+    bodyPart(model, "Torso", Vector3.new(3, 4, 1.6), CFrame.new(), definition.color)
+    bodyPart(
         model,
         "Head",
-        Vector3.new(2.7, 2.4, 2.2),
-        CFrame.new(0, 3.1, 0),
-        Color3.fromRGB(116, 62, 142)
+        Vector3.new(2.2, 2.2, 2.2),
+        CFrame.new(0, 3, 0),
+        Color3.fromRGB(244, 215, 181)
     )
-    part(
+    bodyPart(model, "LeftArm", Vector3.new(1, 4, 1), CFrame.new(-2, 0, 0), definition.color)
+    bodyPart(model, "RightArm", Vector3.new(1, 4, 1), CFrame.new(2, 0, 0), definition.color)
+    bodyPart(
         model,
-        "LeftArm",
-        Vector3.new(1.2, 4.5, 1.2),
-        CFrame.new(-2.25, -0.1, 0),
-        Color3.fromRGB(74, 38, 94)
+        "LeftLeg",
+        Vector3.new(1.2, 3.5, 1.2),
+        CFrame.new(-0.8, -3.7, 0),
+        Color3.fromRGB(50, 55, 65)
     )
-    part(
+    bodyPart(
         model,
-        "RightArm",
-        Vector3.new(1.2, 4.5, 1.2),
-        CFrame.new(2.25, -0.1, 0),
-        Color3.fromRGB(74, 38, 94)
+        "RightLeg",
+        Vector3.new(1.2, 3.5, 1.2),
+        CFrame.new(0.8, -3.7, 0),
+        Color3.fromRGB(50, 55, 65)
     )
-    part(
-        model,
-        "LeftEye",
-        Vector3.new(0.5, 0.5, 0.25),
-        CFrame.new(-0.62, 3.35, -1.12),
-        Color3.fromRGB(255, 105, 45),
-        Enum.PartType.Ball
-    )
-    part(
-        model,
-        "RightEye",
-        Vector3.new(0.5, 0.5, 0.25),
-        CFrame.new(0.62, 3.35, -1.12),
-        Color3.fromRGB(255, 105, 45),
-        Enum.PartType.Ball
-    )
-    local hornLeft = part(
-        model,
-        "LeftHorn",
-        Vector3.new(0.55, 1.8, 0.55),
-        CFrame.new(-0.8, 5, 0) * CFrame.Angles(0, 0, -0.35),
-        Color3.fromRGB(220, 205, 175)
-    )
-    local hornRight = part(
-        model,
-        "RightHorn",
-        Vector3.new(0.55, 1.8, 0.55),
-        CFrame.new(0.8, 5, 0) * CFrame.Angles(0, 0, 0.35),
-        Color3.fromRGB(220, 205, 175)
-    )
-    hornLeft.Shape, hornRight.Shape = Enum.PartType.Cylinder, Enum.PartType.Cylinder
-
     local humanoid = Instance.new("Humanoid")
-    humanoid.MaxHealth = 150
-    humanoid.Health = 150
-    humanoid.DisplayName = "ABYSS MONSTER"
+    humanoid.MaxHealth, humanoid.Health, humanoid.DisplayName = 150, 150, definition.distance
     humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOn
-    humanoid.NameDisplayDistance = 80
-    humanoid.HealthDisplayDistance = 80
-    humanoid.BreakJointsOnDeath = false
-    humanoid.Parent = model
-    model.PrimaryPart = root
-    model.Parent = Workspace
-
+    humanoid.NameDisplayDistance, humanoid.HealthDisplayDistance = 180, 180
+    humanoid.BreakJointsOnDeath, humanoid.Parent = false, model
+    model.PrimaryPart, model.Parent = root, folder
     local highlight = Instance.new("Highlight")
-    highlight.Name = "HitSilhouette"
-    highlight.FillTransparency = 0.78
-    highlight.OutlineColor = Color3.fromRGB(255, 120, 55)
-    highlight.OutlineTransparency = 0
-    highlight.Parent = model
-
+    highlight.Name, highlight.FillColor, highlight.FillTransparency =
+        "HitSilhouette", definition.color, 0.82
+    highlight.OutlineColor, highlight.OutlineTransparency, highlight.Parent =
+        Color3.new(1, 1, 1), 0.1, model
     humanoid.HealthChanged:Connect(function(health)
         if health > 0 then
-            highlight.FillColor = Color3.fromRGB(255, 55, 55)
+            highlight.FillColor = Color3.fromRGB(255, 40, 40)
             task.delay(0.12, function()
                 if highlight.Parent then
-                    highlight.FillColor = Color3.fromRGB(92, 48, 118)
+                    highlight.FillColor = definition.color
                 end
             end)
         end
     end)
     humanoid.Died:Connect(function()
-        highlight.FillColor = Color3.fromRGB(255, 220, 80)
+        highlight.FillColor = Color3.fromRGB(255, 225, 75)
         task.delay(RESPAWN_TIME, function()
             if model.Parent then
                 model:Destroy()
             end
-            spawnMonster()
+            spawnDummy(definition)
         end)
     end)
 end
 
-spawnMonster()
+for _, definition in ipairs(DUMMIES) do
+    spawnDummy(definition)
+end

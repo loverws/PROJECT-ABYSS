@@ -126,7 +126,7 @@ def test_production_wiring():
         "neutralPitch + displayedPitch - lastOutputPitch",
         "local finalYaw = normalizeAngle(neutralYaw + recoilYaw)",
         "local finalPitch = math.clamp(neutralPitch + recoilPitch",
-        "lastOutputYaw = finalYaw", "lastOutputPitch = finalPitch",
+        "lastOutputYaw, lastOutputPitch = finalYaw, finalPitch",
         "CFrame.lookAt(cameraPosition, cameraPosition + finalLook, Vector3.yAxis)",
         'Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(onCurrentCameraChanged)',
         "player.CharacterAdded:Connect(resetCameraTracking)",
@@ -136,7 +136,9 @@ def test_production_wiring():
     assert "appliedRecoilPitch" not in source and "appliedRecoilYaw" not in source
     assert "camera.CFrame.Position" not in source
     assert source.index("neutralYaw = normalizeAngle") < source.index("local finalYaw = normalizeAngle")
-    assert source.index("camera.CFrame = CFrame.lookAt") < source.index("lastOutputYaw = finalYaw")
+    assert source.index("camera.CFrame = CFrame.lookAt") < source.index(
+        "lastOutputYaw, lastOutputPitch = finalYaw, finalPitch"
+    )
     print("PASS: production wiring derives neutral input delta before output-only recoil")
 
 
