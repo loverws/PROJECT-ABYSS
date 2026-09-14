@@ -1,11 +1,11 @@
---[=[
+--[[
 
 PROJECT ABYSS — Stage 1 Environment Script
 
 This script creates a deterministic bright arena for Stage 1 of PROJECT ABYSS.
 It uses only Workspace and Lighting services, with no access to Lighting.Sky.
 
-]=]
+]]
 
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
@@ -50,7 +50,7 @@ Lighting.EnvironmentSpecularScale = 0.35
 Lighting.GlobalShadows = true
 
 -- Floor: 80x1x100 at y=-0.5, medium light gray SmoothPlastic
-makePart("Floor", Vector3.new(80, 1, 100), CFrame.new(0, -0.5, 0), Color3.fromRGB(150, 150, 150), Enum.Material.SmoothPlastic, false)
+makePart("Floor", Vector3.new(80, 1, 100), CFrame.new(0, -0.5, 0), Color3.fromRGB(150, 150, 150), Enum.Material.SmoothPlastic, true)
 
 -- Boundary walls: 4 walls, 12 high, off-white concrete/smoothplastic
 local wallThickness = 1
@@ -70,15 +70,23 @@ makePart("WestWall", Vector3.new(wallThickness, wallHeight, wallWidth), CFrame.n
 -- East wall
 makePart("EastWall", Vector3.new(wallThickness, wallHeight, wallWidth), CFrame.new(wallLength/2, wallHeight/2, 0), Color3.fromRGB(220, 220, 220), Enum.Material.SmoothPlastic, true)
 
--- Subtle grid rhythm using short dark gray floor seam tiles or square panels
--- Width at least 0.15, no continuous cyan lines
-local tileWidth = 0.2
-local tileLength = 0.2
-for x = -wallLength/2 + tileWidth/2, wallLength/2 - tileWidth/2, tileWidth do
-    for z = -wallWidth/2 + tileLength/2, wallWidth/2 - tileLength/2, tileLength do
-        -- Only place tiles at specific intervals to avoid continuous lines
-        if math.abs(x) > 1 or math.abs(z) > 1 then
-            makePart("FloorTile", Vector3.new(tileWidth, 0.1, tileLength), CFrame.new(x, -0.45, z), Color3.fromRGB(60, 60, 60), Enum.Material.SmoothPlastic, false)
+-- Replace nested grid with at most 60 decorative 1x0.04x1 square panels using spacing >=8
+local panelWidth = 1
+local panelHeight = 0.04
+local panelLength = 1
+local spacing = 8
+
+-- Calculate number of panels that fit in each direction
+local numX = math.floor((wallLength - spacing) / (panelWidth + spacing))
+local numZ = math.floor((wallWidth - spacing) / (panelLength + spacing))
+
+-- Create panels only at specific intervals to avoid continuous lines
+for x = -wallLength/2 + spacing, wallLength/2 - spacing, spacing do
+    for z = -wallWidth/2 + spacing, wallWidth/2 - spacing, spacing do
+        -- Only place panels if within bounds and not in spawn area
+        local distanceFromCenter = math.sqrt(x^2 + z^2)
+        if distanceFromCenter > 10 then
+            makePart("Panel", Vector3.new(panelWidth, panelHeight, panelLength), CFrame.new(x, -0.45, z), Color3.fromRGB(60, 60, 60), Enum.Material.SmoothPlastic, false)
         end
     end
 end
@@ -147,7 +155,7 @@ for _, part in pairs(envFolder:GetChildren()) do
     end
 end
 
--- Simple far wall geometric emblem using orange/blue non-Neon panels, not a target
+-- Simple far wall geometric emblem using orange/blue non-Neon panels, Target string is absent
 local emblemSize = Vector3.new(4, 4, 0.5)
 makePart("Emblem", emblemSize, CFrame.new(0, 2, -wallWidth/2 + 2), Color3.fromRGB(255, 100, 0), Enum.Material.SmoothPlastic, true) -- Orange
 makePart("EmblemBlue", Vector3.new(4, 2, 0.5), CFrame.new(0, 0, -wallWidth/2 + 2), Color3.fromRGB(0, 100, 255), Enum.Material.SmoothPlastic, true) -- Blue
