@@ -4,6 +4,7 @@ const fs=require("fs"),path=require("path"),root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const profiles=read("src/shared/SoundProfiles.lua"), player=read("src/shared/SoundPlayer.lua");
 const mobile=read("src/client/MobileInputController.lua"), tutorial=read("src/client/TutorialHUD.lua");
+const theme=read("src/client/UITheme.lua");
 const feedback=read("src/client/FirstPersonCombat.client.lua"), client=read("src/client/ClientWeaponSystem.lua");
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
@@ -39,4 +40,10 @@ for(const [w,h] of [[640,360],[667,375],[844,390],[896,414],[932,430],[1280,720]
 assert(!mobile.includes("ContextActionService")&&!mobile.includes("BindAction")&&!mobile.includes("InputChanged:Connect"),"touch camera ownership regression");
 assert(!feedback.includes("camera.CFrame = Tween")&&!mobile.includes("ViewportPointToRay"),"UI motion changes camera/aim");
 console.log("PASS: glass/icon hierarchy, state styling, objective card, feedback, center-clear and aim isolation");
+for(const token of ["UITheme.Tint", "SlotNumber", "parent.ZIndex + 2", "255, 105, 62", "67, 215, 255", "selected and Color3.fromRGB(255, 151, 59)"])
+  assert(mobile.includes(token)||tutorial.includes(token)||theme.includes(token),"high-contrast HUD contract missing: "+token);
+assert((mobile.match(/UDim2\.new\(1, -28, 0\.4, 0\)/g)||[]).length===1,"fire geometry changed");
+assert((mobile.match(/UDim2\.new\(1, -126, 0\.48, 0\)/g)||[]).length===1,"reload geometry changed");
+assert(theme.includes("UITheme.PanelRaised, 0.3, 0"),"glass opacity regression");
+console.log("PASS: foreground Z-order, bright action tints, selected-slot fill, and fixed input geometry");
 console.log("All v13 audio/UI polish deterministic contracts passed.");

@@ -7,6 +7,12 @@
 3. Director reviews visual/audio quality and returns bounded v13 rework items if needed.
 4. Only after Director readiness may the owner perform the real-phone Human Gate.
 
+Immediate Director recheck: open `build/project_abyss_v13_ui_contrast_qa.rbxlx` in Studio at
+normal display brightness and capture iPhone XR normal HUD, active reload, and at least two
+selected-slot states. Confirm tutorial title/objective/progress, FIRE, reload, health, ammo, slot
+number/icon/label, and selected fill remain readable at the full 896x414 frame. Reject and iterate
+if any key label disappears; emulator evidence does not grant the real-phone Human Gate.
+
 Focused audio/UI evidence must include rifle burst clarity, pistol distinction, reload timing,
 melee swing-versus-contact, grenade bounce/explosion layers, normal/reloading/selected-slot HUD,
 tutorial progress/timer urgency, damage feedback, and a PC preview. Do not infer audio quality from

@@ -13,6 +13,14 @@ playback concurrency/cooldowns, timed reload cues, melee swing/contact separatio
 glass theme, icon-first mobile actions, objective-card progression, and compact damage feedback.
 Studio listening and mobile/PC visual capture remain required before Director acceptance.
 
+Director mobile-emulation review of `qa_v13_audio_ui_runtime.png` found the first glass pass too
+dark at 896x414. The same v13 branch now raises panel luminance/transparency, explicitly layers
+foreground text above glass surfaces, gives FIRE/reload/health distinct high-contrast treatments,
+and adds a filled orange selected-slot state with visible slot numbers. All input geometry and the
+central 20-percent exclusion region are unchanged. Machine checks pass; replacement Studio
+iPhone XR normal/reload/two-slot screenshots are still required because this Codex environment
+does not expose Roblox Studio as a controllable application.
+
 Updated: 2026-09-10
 Execution: WORK REMOTE READY
 Branch: main

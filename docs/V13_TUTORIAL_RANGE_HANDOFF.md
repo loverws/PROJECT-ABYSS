@@ -35,7 +35,20 @@ reload/cooldown states, an objective card, progress/timer urgency, and compact t
 The deterministic layout matrix keeps the central 20 percent clear at common phone sizes and PC
 preview, but Studio screenshots remain required evidence.
 
+After Director rejected the overly dark first runtime pass, the contrast correction explicitly
+places all control/card text above its parent surface, lightens the translucent glass palette,
+adds white foreground labels with restrained dark edging, applies red/orange FIRE and cyan reload
+treatments, and uses an orange fill plus gold number/stroke for selection. Control positions and
+sizes were not changed. `V13AudioUIPolishTestRunner.js` now locks foreground layering, action
+tints, selected fill, glass opacity, fixed FIRE/reload coordinates, center clearance, and
+camera/aim isolation.
+
 ## Required QA
+
+For the contrast correction specifically, capture the normal HUD, reloading state, and two
+different selected slots on iPhone XR. Studio is not exposed to the current Codex computer-use
+surface, so those replacement images remain a Director-side evidence requirement rather than an
+inferred PASS.
 
 Capture mobile-emulation evidence for stages 1–5, Head/Chest/Arm/Leg feedback, critical reaction
 cooldown, every weapon profile, moving target, novice bot, grenade exercise, range ambience, HUD

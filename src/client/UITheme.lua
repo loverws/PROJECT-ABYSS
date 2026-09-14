@@ -1,8 +1,8 @@
 -- Shared arcade-FPS glass treatment for existing v13 HUD surfaces.
 local TweenService = game:GetService("TweenService")
 local UITheme = {
-    Panel = Color3.fromRGB(16, 22, 31),
-    PanelRaised = Color3.fromRGB(27, 35, 48),
+    Panel = Color3.fromRGB(24, 34, 49),
+    PanelRaised = Color3.fromRGB(48, 64, 86),
     Text = Color3.fromRGB(244, 248, 255),
     Muted = Color3.fromRGB(157, 171, 190),
     Cyan = Color3.fromRGB(55, 205, 255),
@@ -20,29 +20,40 @@ end
 
 function UITheme.Glass(object, accent, radius)
     object.BackgroundColor3, object.BackgroundTransparency, object.BorderSizePixel =
-        UITheme.PanelRaised, 0.16, 0
+        UITheme.PanelRaised, 0.3, 0
     UITheme.Round(object, radius or 12)
     local stroke = Instance.new("UIStroke")
     stroke.Name, stroke.Color, stroke.Transparency, stroke.Thickness =
-        "StateStroke", accent or UITheme.Cyan, 0.38, 1.4
+        "StateStroke", accent or UITheme.Cyan, 0.08, 1.8
     stroke.Parent = object
     local gradient = Instance.new("UIGradient")
     gradient.Name, gradient.Color, gradient.Rotation =
         "GlassGradient", ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(49, 61, 80)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 19, 27)),
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(91, 113, 143)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(34, 48, 68)),
         }), 90
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.08),
+        NumberSequenceKeypoint.new(1, 0.24),
+    })
     gradient.Parent = object
     return stroke
+end
+
+function UITheme.Tint(object, topColor, bottomColor)
+    local gradient = object:FindFirstChild("GlassGradient")
+    if gradient then
+        gradient.Color = ColorSequence.new(topColor, bottomColor)
+    end
 end
 
 function UITheme.Shadow(object)
     local shadow = Instance.new("ImageLabel")
     shadow.Name, shadow.BackgroundTransparency, shadow.Image =
         "SoftShadow", 1, "rbxasset://textures/ui/Controls/DropShadow.png"
-    shadow.ImageColor3, shadow.ImageTransparency = Color3.new(0, 0, 0), 0.48
+    shadow.ImageColor3, shadow.ImageTransparency = Color3.new(0, 0, 0), 0.68
     shadow.Size, shadow.Position, shadow.ZIndex =
-        UDim2.new(1, 18, 1, 18), UDim2.fromOffset(-9, -5), math.max(0, object.ZIndex - 1)
+        UDim2.new(1, 18, 1, 18), UDim2.fromOffset(-9, -5), 0
     shadow.Parent = object
 end
 

@@ -12,6 +12,8 @@ local function text(parent, name, value, size, position, font, color)
     label.BackgroundTransparency, label.Font, label.TextColor3 = 1, font, color
     label.TextXAlignment, label.TextTruncate, label.Parent =
         Enum.TextXAlignment.Left, Enum.TextTruncate.AtEnd, parent
+    label.TextStrokeColor3, label.TextStrokeTransparency, label.ZIndex =
+        Color3.fromRGB(5, 10, 18), 0.62, parent.ZIndex + 2
     return label
 end
 
@@ -25,6 +27,7 @@ function TutorialHUD:Init()
         "TutorialPanel", UDim2.fromOffset(228, 94), UDim2.fromOffset(14, 44), 4
     panel.Parent = gui
     local stroke = UITheme.Glass(panel, UITheme.Cyan, 13)
+    UITheme.Tint(panel, Color3.fromRGB(70, 103, 137), Color3.fromRGB(28, 47, 68))
     UITheme.Shadow(panel)
 
     local badge = Instance.new("TextLabel")
@@ -41,7 +44,7 @@ function TutorialHUD:Init()
         UDim2.fromOffset(134, 20),
         UDim2.fromOffset(78, 10),
         Enum.Font.GothamBold,
-        UITheme.Muted
+        UITheme.Text
     )
     title.TextSize = 11
     local objective = text(
@@ -60,10 +63,12 @@ function TutorialHUD:Init()
         "ProgressTrack", UDim2.new(1, -82, 0, 7), UDim2.fromOffset(10, 76)
     progressBack.BackgroundColor3, progressBack.BackgroundTransparency, progressBack.BorderSizePixel, progressBack.Parent =
         Color3.fromRGB(67, 76, 91), 0.25, 0, panel
+    progressBack.ZIndex = 6
     UITheme.Round(progressBack, 4)
     local progress = Instance.new("Frame")
     progress.Name, progress.Size, progress.BackgroundColor3, progress.BorderSizePixel, progress.Parent =
         "ProgressFill", UDim2.fromScale(0, 1), UITheme.Cyan, 0, progressBack
+    progress.ZIndex = 7
     UITheme.Round(progress, 4)
     for index = 1, 4 do
         local segment = Instance.new("Frame")
@@ -80,6 +85,7 @@ function TutorialHUD:Init()
         UITheme.Panel, 0.05, UITheme.Text
     timer.Font, timer.TextSize, timer.Visible, timer.Parent =
         Enum.Font.GothamBlack, 12, false, panel
+    timer.ZIndex = 7
     UITheme.Round(timer, 8)
 
     local receivedAt, remaining, lastStage, baseStageText = 0, nil, nil, ""

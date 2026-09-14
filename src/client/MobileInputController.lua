@@ -18,7 +18,9 @@ local function addText(parent, name, text, size, position, font, color)
     label.Name, label.Text, label.Size, label.Position = name, text, size, position
     label.BackgroundTransparency, label.Font, label.TextColor3 =
         1, font or Enum.Font.GothamBold, color or UITheme.Text
-    label.TextScaled, label.Parent = true, parent
+    label.TextScaled, label.TextStrokeColor3, label.TextStrokeTransparency =
+        true, Color3.fromRGB(5, 10, 18), 0.64
+    label.ZIndex, label.Parent = parent.ZIndex + 2, parent
     return label
 end
 
@@ -49,7 +51,7 @@ local function makeButton(parent, name, icon, caption, size, position, anchor, a
         UDim2.new(1, -8, 0.24, 0),
         UDim2.new(0, 4, 0.72, 0),
         Enum.Font.GothamBold,
-        UITheme.Muted
+        UITheme.Text
     )
     captionLabel.TextXAlignment = Enum.TextXAlignment.Center
     return button, stroke
@@ -76,6 +78,7 @@ local function createMobileCombatUI()
         Vector2.new(1, 0.5),
         UITheme.Red
     )
+    UITheme.Tint(fireButton, Color3.fromRGB(255, 105, 62), Color3.fromRGB(185, 38, 49))
     fireButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch then
             ClientWeaponSystem:BeginPrimary()
@@ -97,6 +100,7 @@ local function createMobileCombatUI()
         Vector2.new(1, 0.5),
         UITheme.Cyan
     )
+    UITheme.Tint(reload, Color3.fromRGB(67, 215, 255), Color3.fromRGB(24, 100, 166))
     reload.Activated:Connect(function()
         ClientWeaponSystem:Reload()
     end)
@@ -106,6 +110,7 @@ local function createMobileCombatUI()
         "WeaponStatus", UDim2.fromOffset(150, 34), UDim2.new(0.5, 0, 1, -60), Vector2.new(0.5, 1), 6
     status.Parent = gui
     UITheme.Glass(status, UITheme.Cyan, 9)
+    UITheme.Tint(status, Color3.fromRGB(64, 91, 122), Color3.fromRGB(26, 42, 63))
     local weaponName = addText(
         status,
         "WeaponName",
@@ -113,7 +118,7 @@ local function createMobileCombatUI()
         UDim2.new(0.58, -8, 1, -8),
         UDim2.fromOffset(8, 4),
         Enum.Font.GothamBold,
-        UITheme.Muted
+        UITheme.Text
     )
     weaponName.TextXAlignment = Enum.TextXAlignment.Left
     local ammo = addText(
@@ -130,6 +135,7 @@ local function createMobileCombatUI()
         "HealthStatus", UDim2.fromOffset(88, 34), UDim2.new(0, 18, 1, -18), Vector2.new(0, 1), 6
     health.Parent = gui
     UITheme.Glass(health, UITheme.Green, 10)
+    UITheme.Tint(health, Color3.fromRGB(37, 116, 86), Color3.fromRGB(20, 61, 53))
     addText(
         health,
         "HealthIcon",
@@ -162,6 +168,17 @@ local function createMobileCombatUI()
             UITheme.Cyan
         )
         button:SetAttribute("SlotIndex", slot)
+        UITheme.Tint(button, Color3.fromRGB(63, 83, 108), Color3.fromRGB(27, 39, 58))
+        local slotNumber = addText(
+            button,
+            "SlotNumber",
+            tostring(slot),
+            UDim2.fromOffset(14, 14),
+            UDim2.fromOffset(4, 3),
+            Enum.Font.GothamBlack,
+            UITheme.Cyan
+        )
+        slotNumber.TextSize, slotNumber.TextScaled = 11, false
         button.Activated:Connect(function()
             ClientWeaponSystem:SelectSlot(slot)
         end)
@@ -180,7 +197,7 @@ local function createMobileCombatUI()
             state.reloading and "Reloading" or firearm and "Ready" or "Disabled"
         )
         reloadStroke.Color, reloadStroke.Transparency =
-            state.reloading and UITheme.Orange or UITheme.Cyan, firearm and 0.2 or 0.72
+            state.reloading and UITheme.Orange or UITheme.Cyan, firearm and 0.02 or 0.38
         reload.ActionIcon.Text, reload.ActionCaption.TextTransparency =
             state.reloading and "…" or "↻", firearm and 0 or 0.58
         local cooling = (state.cooldownRemaining or 0) > 0
@@ -193,7 +210,7 @@ local function createMobileCombatUI()
             cooling and UITheme.Muted or UITheme.Red,
             state.grenadeHolding and 2.6 or 1.4,
             cooling and 0.65 or 0.18
-        fireButton.ActionIcon.TextTransparency = cooling and 0.45 or 0
+        fireButton.ActionIcon.TextTransparency = cooling and 0.22 or 0
         for slot, button in ipairs(slots) do
             local selected = slot == state.slot
             button:SetAttribute("Selected", selected)
@@ -202,6 +219,12 @@ local function createMobileCombatUI()
                 selected and 2.5 or 1.2,
                 selected and 0 or 0.55
             button.ActionCaption.TextColor3 = selected and UITheme.Text or UITheme.Muted
+            button.SlotNumber.TextColor3 = selected and UITheme.Gold or UITheme.Cyan
+            UITheme.Tint(
+                button,
+                selected and Color3.fromRGB(255, 151, 59) or Color3.fromRGB(63, 83, 108),
+                selected and Color3.fromRGB(177, 61, 35) or Color3.fromRGB(27, 39, 58)
+            )
             if selected then
                 UITheme.Pulse(button)
             end
