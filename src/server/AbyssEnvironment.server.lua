@@ -50,7 +50,14 @@ Lighting.EnvironmentSpecularScale = 0.35
 Lighting.GlobalShadows = true
 
 -- Floor: 80x1x100 at y=-0.5, medium light gray SmoothPlastic
-makePart("Floor", Vector3.new(80, 1, 100), CFrame.new(0, -0.5, 0), Color3.fromRGB(150, 150, 150), Enum.Material.SmoothPlastic, true)
+makePart(
+    "Floor",
+    Vector3.new(80, 1, 100),
+    CFrame.new(0, -0.5, 0),
+    Color3.fromRGB(150, 150, 150),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- Boundary walls: 4 walls, 12 high, off-white concrete/smoothplastic
 local wallThickness = 1
@@ -59,34 +66,75 @@ local wallLength = 100
 local wallWidth = 80
 
 -- North wall
-makePart("NorthWall", Vector3.new(wallLength, wallHeight, wallThickness), CFrame.new(0, wallHeight/2, -wallWidth/2), Color3.fromRGB(220, 220, 220), Enum.Material.SmoothPlastic, true)
+makePart(
+    "NorthWall",
+    Vector3.new(wallLength, wallHeight, wallThickness),
+    CFrame.new(0, wallHeight / 2, -wallWidth / 2),
+    Color3.fromRGB(220, 220, 220),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- South wall
-makePart("SouthWall", Vector3.new(wallLength, wallHeight, wallThickness), CFrame.new(0, wallHeight/2, wallWidth/2), Color3.fromRGB(220, 220, 220), Enum.Material.SmoothPlastic, true)
+makePart(
+    "SouthWall",
+    Vector3.new(wallLength, wallHeight, wallThickness),
+    CFrame.new(0, wallHeight / 2, wallWidth / 2),
+    Color3.fromRGB(220, 220, 220),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- West wall
-makePart("WestWall", Vector3.new(wallThickness, wallHeight, wallWidth), CFrame.new(-wallLength/2, wallHeight/2, 0), Color3.fromRGB(220, 220, 220), Enum.Material.SmoothPlastic, true)
+makePart(
+    "WestWall",
+    Vector3.new(wallThickness, wallHeight, wallWidth),
+    CFrame.new(-wallLength / 2, wallHeight / 2, 0),
+    Color3.fromRGB(220, 220, 220),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- East wall
-makePart("EastWall", Vector3.new(wallThickness, wallHeight, wallWidth), CFrame.new(wallLength/2, wallHeight/2, 0), Color3.fromRGB(220, 220, 220), Enum.Material.SmoothPlastic, true)
+makePart(
+    "EastWall",
+    Vector3.new(wallThickness, wallHeight, wallWidth),
+    CFrame.new(wallLength / 2, wallHeight / 2, 0),
+    Color3.fromRGB(220, 220, 220),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- Replace nested grid with at most 60 decorative 1x0.04x1 square panels using spacing >=8
 local panelWidth = 1
 local panelHeight = 0.04
 local panelLength = 1
-local spacing = 8
 
--- Calculate number of panels that fit in each direction
-local numX = math.floor((wallLength - spacing) / (panelWidth + spacing))
-local numZ = math.floor((wallWidth - spacing) / (panelLength + spacing))
+-- Set arena bounds
+local arenaX = 80
+local arenaZ = 100
+
+-- Calculate spawn area centered near z=35, safe and unobstructed
+local spawnCFrame = CFrame.new(0, 0, 35)
 
 -- Create panels only at specific intervals to avoid continuous lines
-for x = -wallLength/2 + spacing, wallLength/2 - spacing, spacing do
-    for z = -wallWidth/2 + spacing, wallWidth/2 - spacing, spacing do
-        -- Only place panels if within bounds and not in spawn area
-        local distanceFromCenter = math.sqrt(x^2 + z^2)
-        if distanceFromCenter > 10 then
-            makePart("Panel", Vector3.new(panelWidth, panelHeight, panelLength), CFrame.new(x, -0.45, z), Color3.fromRGB(60, 60, 60), Enum.Material.SmoothPlastic, false)
+-- Use x=-32,32,8 (9 values) and z=-40,40,16 (6 values), total <=54
+local xPositions = { -32, -24, -16, -8, 0, 8, 16, 24, 32 }
+local zPositions = { -40, -24, -8, 8, 24, 40 }
+
+for _, x in ipairs(xPositions) do
+    for _, z in ipairs(zPositions) do
+        -- Skip positions within 10 studs of spawn position
+        local distanceFromSpawn = (Vector3.new(x, 0, z) - spawnCFrame.Position).Magnitude
+        if distanceFromSpawn > 10 then
+            makePart(
+                "Panel",
+                Vector3.new(panelWidth, panelHeight, panelLength),
+                CFrame.new(x, -0.45, z),
+                Color3.fromRGB(60, 60, 60),
+                Enum.Material.SmoothPlastic,
+                false
+            )
         end
     end
 end
@@ -99,32 +147,46 @@ local blockLength = 2
 
 -- Low blocks (8 total)
 local lowBlocks = {
-    {x = -10, z = -10},
-    {x = 10, z = -10},
-    {x = -10, z = 10},
-    {x = 10, z = 10},
-    {x = -5, z = -15},
-    {x = 5, z = -15},
-    {x = -15, z = -5},
-    {x = 15, z = -5}
+    { x = -10, z = -10 },
+    { x = 10, z = -10 },
+    { x = -10, z = 10 },
+    { x = 10, z = 10 },
+    { x = -5, z = -15 },
+    { x = 5, z = -15 },
+    { x = -15, z = -5 },
+    { x = 15, z = -5 },
 }
 
 for _, pos in ipairs(lowBlocks) do
-    makePart("LowBlock", Vector3.new(blockWidth, blockHeight, blockLength), CFrame.new(pos.x, blockHeight/2, pos.z), Color3.fromRGB(180, 180, 180), Enum.Material.SmoothPlastic, true)
+    makePart(
+        "LowBlock",
+        Vector3.new(blockWidth, blockHeight, blockLength),
+        CFrame.new(pos.x, blockHeight / 2, pos.z),
+        Color3.fromRGB(180, 180, 180),
+        Enum.Material.SmoothPlastic,
+        true
+    )
 end
 
 -- Tall blocks (6 total)
 local tallBlocks = {
-    {x = -10, z = -5},
-    {x = 10, z = -5},
-    {x = -5, z = 10},
-    {x = 5, z = 10},
-    {x = -15, z = 0},
-    {x = 15, z = 0}
+    { x = -10, z = -5 },
+    { x = 10, z = -5 },
+    { x = -5, z = 10 },
+    { x = 5, z = 10 },
+    { x = -15, z = 0 },
+    { x = 15, z = 0 },
 }
 
 for _, pos in ipairs(tallBlocks) do
-    makePart("TallBlock", Vector3.new(blockWidth, blockHeight * 2, blockLength), CFrame.new(pos.x, blockHeight, pos.z), Color3.fromRGB(180, 180, 180), Enum.Material.SmoothPlastic, true)
+    makePart(
+        "TallBlock",
+        Vector3.new(blockWidth, blockHeight * 2, blockLength),
+        CFrame.new(pos.x, blockHeight, pos.z),
+        Color3.fromRGB(180, 180, 180),
+        Enum.Material.SmoothPlastic,
+        true
+    )
 end
 
 -- Two side platforms with ramps or steps, within bounds
@@ -133,19 +195,37 @@ local platformLength = 6
 local platformHeight = 2
 
 -- Left platform
-makePart("LeftPlatform", Vector3.new(platformWidth, platformHeight, platformLength), CFrame.new(-20, platformHeight/2, 15), Color3.fromRGB(180, 180, 180), Enum.Material.SmoothPlastic, true)
+makePart(
+    "LeftPlatform",
+    Vector3.new(platformWidth, platformHeight, platformLength),
+    CFrame.new(-20, platformHeight / 2, 15),
+    Color3.fromRGB(180, 180, 180),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- Right platform
-makePart("RightPlatform", Vector3.new(platformWidth, platformHeight, platformLength), CFrame.new(20, platformHeight/2, 15), Color3.fromRGB(180, 180, 180), Enum.Material.SmoothPlastic, true)
-
--- Spawn area centered near z=35, safe and unobstructed
--- The spawn area is a clear zone at the center of the arena
-local spawnAreaSize = Vector3.new(6, 1, 6)
-local spawnCFrame = CFrame.new(0, 0, 35)
+makePart(
+    "RightPlatform",
+    Vector3.new(platformWidth, platformHeight, platformLength),
+    CFrame.new(20, platformHeight / 2, 15),
+    Color3.fromRGB(180, 180, 180),
+    Enum.Material.SmoothPlastic,
+    true
+)
 
 -- Create a clear spawn area by removing any parts that might be in the way
 for _, part in pairs(envFolder:GetChildren()) do
-    if part:IsA("Part") and (part.Name == "Floor" or part.Name == "NorthWall" or part.Name == "SouthWall" or part.Name == "WestWall" or part.Name == "EastWall") then
+    if
+        part:IsA("Part")
+        and (
+            part.Name == "Floor"
+            or part.Name == "NorthWall"
+            or part.Name == "SouthWall"
+            or part.Name == "WestWall"
+            or part.Name == "EastWall"
+        )
+    then
         -- Do not remove the floor or walls
     else
         -- Remove any other parts that might interfere with spawn area
@@ -155,7 +235,31 @@ for _, part in pairs(envFolder:GetChildren()) do
     end
 end
 
--- Simple far wall geometric emblem using orange/blue non-Neon panels, Target string is absent
+-- Simple far wall geometric emblem using orange/blue non-Neon panels
 local emblemSize = Vector3.new(4, 4, 0.5)
-makePart("Emblem", emblemSize, CFrame.new(0, 2, -wallWidth/2 + 2), Color3.fromRGB(255, 100, 0), Enum.Material.SmoothPlastic, true) -- Orange
-makePart("EmblemBlue", Vector3.new(4, 2, 0.5), CFrame.new(0, 0, -wallWidth/2 + 2), Color3.fromRGB(0, 100, 255), Enum.Material.SmoothPlastic, true) -- Blue
+makePart(
+    "Emblem",
+    emblemSize,
+    CFrame.new(0, 2, -wallWidth / 2 + 2),
+    Color3.fromRGB(255, 100, 0),
+    Enum.Material.SmoothPlastic,
+    true
+) -- Orange
+makePart(
+    "EmblemBlue",
+    Vector3.new(4, 2, 0.5),
+    CFrame.new(0, 0, -wallWidth / 2 + 2),
+    Color3.fromRGB(0, 100, 255),
+    Enum.Material.SmoothPlastic,
+    true
+) -- Blue
+
+-- Far-wall emblem just inside north wall at z=-49.4 and make it non-collidable
+makePart(
+    "FarWallEmblem",
+    Vector3.new(4, 4, 0.5),
+    CFrame.new(0, 2, -wallWidth / 2 + 0.6),
+    Color3.fromRGB(255, 100, 0),
+    Enum.Material.SmoothPlastic,
+    false
+) -- Orange
