@@ -24,6 +24,7 @@ REQUIRED_SKILLS = [
     "roblox-test-evidence",
     "abyss-git-checkpoint",
     "abyss-status-report",
+    "abyss-product-direction",
 ]
 
 def fail(message: str) -> None:
